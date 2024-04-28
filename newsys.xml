@@ -6,9 +6,11 @@ const int N=3;
 typedef int[0,N-1] id_wd;
 chan WD2HAP_REQ[N];
 
-chan HAP2WD[id_wd];
+//broadcast chan HAP2WD[id_wd];
+broadcast chan HAP2WD;
+id_wd id_sender;
 
-broadcast chan Harvest;
+
 </declaration>
 	<template>
 		<name x="5" y="5">HAP</name>
@@ -26,20 +28,13 @@ int id_sender=0;
 		<location id="id1" x="467" y="-59">
 			<name x="493" y="-68">SignalTransmission</name>
 		</location>
-		<location id="id2" x="187" y="-8">
-		</location>
 		<init ref="id0"/>
-		<transition id="id3">
-			<source ref="id2"/>
-			<target ref="id0"/>
-			<label kind="synchronisation" x="17" y="-42">Harvest!</label>
-		</transition>
-		<transition id="id4">
+		<transition id="id2">
 			<source ref="id1"/>
-			<target ref="id2"/>
-			<label kind="synchronisation" x="212" y="-59">HAP2WD[id_sender]!</label>
+			<target ref="id0"/>
+			<label kind="synchronisation" x="119" y="-68">HAP2WD!</label>
 		</transition>
-		<transition id="id5">
+		<transition id="id3">
 			<source ref="id0"/>
 			<target ref="id1"/>
 			<label kind="select" x="-68" y="-212">id:id_wd</label>
@@ -58,44 +53,40 @@ double Percentage_Harvesting=0.7;
 bool W2H_Request=false;
 
 </declaration>
-		<location id="id6" x="-161" y="0">
-			<name x="-187" y="17">Idle</name>
+		<location id="id4" x="-204" y="34">
+			<name x="-230" y="51">Idle</name>
 		</location>
-		<location id="id7" x="204" y="8">
-			<name x="230" y="-1">SignalReception</name>
+		<location id="id5" x="289" y="42">
+			<name x="323" y="34">SignalReception</name>
 		</location>
-		<location id="id8" x="204" y="-246">
-			<name x="194" y="-280">InfoDecoding</name>
-		</location>
-		<init ref="id6"/>
-		<transition id="id9">
-			<source ref="id8"/>
-			<target ref="id6"/>
-			<label kind="assignment" x="-93" y="-144">EWD=EWD+ER</label>
+		<init ref="id4"/>
+		<transition id="id6">
+			<source ref="id4"/>
+			<target ref="id4"/>
+			<label kind="guard" x="-408" y="161">id!=id_sender</label>
+			<label kind="synchronisation" x="-357" y="178">HAP2WD?</label>
+			<label kind="assignment" x="-357" y="195">EWD=EWD+ES</label>
+			<nail x="-323" y="144"/>
+			<nail x="-212" y="204"/>
+			<nail x="-144" y="153"/>
+			<nail x="-161" y="93"/>
 		</transition>
-		<transition id="id10">
-			<source ref="id7"/>
-			<target ref="id8"/>
-			<label kind="guard" x="229" y="-153">W2H_Request==true</label>
-			<label kind="synchronisation" x="229" y="-136">HAP2WD[id]?</label>
-			<label kind="assignment" x="229" y="-119">ER=ER+ER*Percentage_Harvesting,
+		<transition id="id7">
+			<source ref="id5"/>
+			<target ref="id4"/>
+			<label kind="guard" x="-110" y="-136">id==id_sender</label>
+			<label kind="synchronisation" x="-110" y="-153">HAP2WD?</label>
+			<label kind="assignment" x="-110" y="-195">EWD=EWD+ES*Percentage_Harvesting,
 W2H_Request=false</label>
+			<nail x="34" y="-144"/>
+			<nail x="-170" y="8"/>
 		</transition>
-		<transition id="id11">
-			<source ref="id7"/>
-			<target ref="id6"/>
-			<label kind="guard" x="-178" y="195">W2H_Request==false</label>
-			<label kind="synchronisation" x="-127" y="153">Harvest?</label>
-			<label kind="assignment" x="-127" y="178">EWD=EWD+ES</label>
-			<nail x="7" y="208"/>
-			<nail x="7" y="208"/>
-		</transition>
-		<transition id="id12">
-			<source ref="id6"/>
-			<target ref="id7"/>
-			<label kind="synchronisation" x="-59" y="0">WD2HAP_REQ[id]!</label>
-			<label kind="assignment" x="-59" y="17">ER=ES,
-W2H_Request=true</label>
+		<transition id="id8">
+			<source ref="id4"/>
+			<target ref="id5"/>
+			<label kind="synchronisation" x="-51" y="0">WD2HAP_REQ[id]!</label>
+			<label kind="assignment" x="-51" y="17">W2H_Request=true,
+id_sender=id</label>
 		</transition>
 	</template>
 	<system>system HAP,WD;
