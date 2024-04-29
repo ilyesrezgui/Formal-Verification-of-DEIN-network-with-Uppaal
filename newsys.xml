@@ -1,23 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE nta PUBLIC '-//Uppaal Team//DTD Flat System 1.6//EN' 'http://www.it.uu.se/research/group/darts/uppaal/flat-1_6.dtd'>
 <nta>
-	<declaration>int ES=20; // the enrgy of the signal transmitted/recieved
+	<declaration>int ES=3; // the enrgy of the signal transmitted/recieved
 const int N=3;
 typedef int[0,N-1] id_wd;
-chan WD2HAP_REQ[N];
-
-//broadcast chan HAP2WD[id_wd];
 broadcast chan HAP2WD;
 id_wd id_sender;
-
+chan Send_Data, Data_Sent, WD2HAP_REQ[N];
 
 </declaration>
 	<template>
 		<name x="5" y="5">HAP</name>
-		<declaration>// Place local declarations here.
-int id_sender=0;
-//id_wd list[N+1];
-//int[0,N] len;
+		<declaration>int id_sender=0;
 
 
 
@@ -28,13 +22,28 @@ int id_sender=0;
 		<location id="id1" x="467" y="-59">
 			<name x="493" y="-68">SignalTransmission</name>
 		</location>
+		<location id="id2" x="-272" y="-323">
+			<name x="-282" y="-357">DataReception</name>
+		</location>
 		<init ref="id0"/>
-		<transition id="id2">
+		<transition id="id3">
+			<source ref="id2"/>
+			<target ref="id0"/>
+			<label kind="synchronisation" x="-408" y="-187">Data_Sent!</label>
+			<nail x="-357" y="-34"/>
+			<nail x="-357" y="-34"/>
+		</transition>
+		<transition id="id4">
+			<source ref="id0"/>
+			<target ref="id2"/>
+			<label kind="synchronisation" x="-212" y="-255">Send_Data?</label>
+		</transition>
+		<transition id="id5">
 			<source ref="id1"/>
 			<target ref="id0"/>
 			<label kind="synchronisation" x="119" y="-68">HAP2WD!</label>
 		</transition>
-		<transition id="id3">
+		<transition id="id6">
 			<source ref="id0"/>
 			<target ref="id1"/>
 			<label kind="select" x="-68" y="-212">id:id_wd</label>
@@ -46,55 +55,133 @@ int id_sender=0;
 	<template>
 		<name>WD</name>
 		<parameter>const id_wd id</parameter>
-		<declaration>int Eenergy_Recieved;
-double ER;
-double EWD=0;
-double Percentage_Harvesting=0.7;
+		<declaration>int Epack=1;
+int EWD=0;
+int Energy_Harvested=1;
 bool W2H_Request=false;
+clock x;
+int capacity=10;
+int Elost=0;
+
+int verif_capacity(int x, int y){
+    if (x+y&gt; capacity){
+//energylost(x,y);
+        return capacity;    
+    } 
+    else {
+        return x+y;}
+}
+//int energylost(int x, int y){
+    //return Elost=Elost+(x+y-capacity); 
+//}
 
 </declaration>
-		<location id="id4" x="-204" y="34">
+		<location id="id7" x="-204" y="34">
 			<name x="-230" y="51">Idle</name>
 		</location>
-		<location id="id5" x="289" y="42">
+		<location id="id8" x="289" y="42">
 			<name x="323" y="34">SignalReception</name>
 		</location>
-		<init ref="id4"/>
-		<transition id="id6">
-			<source ref="id4"/>
-			<target ref="id4"/>
-			<label kind="guard" x="-408" y="161">id!=id_sender</label>
-			<label kind="synchronisation" x="-357" y="178">HAP2WD?</label>
-			<label kind="assignment" x="-357" y="195">EWD=EWD+ES</label>
-			<nail x="-323" y="144"/>
-			<nail x="-212" y="204"/>
-			<nail x="-144" y="153"/>
-			<nail x="-161" y="93"/>
+		<location id="id9" x="-527" y="-187">
+			<name x="-537" y="-221">DataTransmission</name>
+		</location>
+		<init ref="id7"/>
+		<transition id="id10">
+			<source ref="id9"/>
+			<target ref="id7"/>
+			<label kind="synchronisation" x="-620" y="25">Data_Sent?</label>
+			<nail x="-527" y="76"/>
+			<nail x="-527" y="76"/>
 		</transition>
-		<transition id="id7">
-			<source ref="id5"/>
-			<target ref="id4"/>
-			<label kind="guard" x="-110" y="-136">id==id_sender</label>
-			<label kind="synchronisation" x="-110" y="-153">HAP2WD?</label>
-			<label kind="assignment" x="-110" y="-195">EWD=EWD+ES*Percentage_Harvesting,
+		<transition id="id11">
+			<source ref="id7"/>
+			<target ref="id9"/>
+			<label kind="guard" x="-408" y="-161">EWD-Epack&gt;=0</label>
+			<label kind="synchronisation" x="-408" y="-145">Send_Data!</label>
+			<label kind="assignment" x="-408" y="-127">EWD=EWD-Epack</label>
+		</transition>
+		<transition id="id12">
+			<source ref="id7"/>
+			<target ref="id7"/>
+			<label kind="guard" x="-365" y="127">id!=id_sender</label>
+			<label kind="synchronisation" x="-323" y="144">HAP2WD?</label>
+			<label kind="assignment" x="-467" y="161">EWD=verif_capacity(ES,EWD)</label>
+			<nail x="-272" y="85"/>
+			<nail x="-212" y="170"/>
+			<nail x="-144" y="119"/>
+			<nail x="-161" y="59"/>
+		</transition>
+		<transition id="id13">
+			<source ref="id8"/>
+			<target ref="id7"/>
+			<label kind="guard" x="-119" y="-136">id==id_sender</label>
+			<label kind="synchronisation" x="-119" y="-153">HAP2WD?</label>
+			<label kind="assignment" x="-119" y="-195">EWD=verif_capacity(Energy_Harvested,EWD),
 W2H_Request=false</label>
 			<nail x="34" y="-144"/>
 			<nail x="-170" y="8"/>
 		</transition>
-		<transition id="id8">
-			<source ref="id4"/>
-			<target ref="id5"/>
-			<label kind="synchronisation" x="-51" y="0">WD2HAP_REQ[id]!</label>
-			<label kind="assignment" x="-51" y="17">W2H_Request=true,
+		<transition id="id14">
+			<source ref="id7"/>
+			<target ref="id8"/>
+			<label kind="synchronisation" x="-17" y="42">WD2HAP_REQ[id]!</label>
+			<label kind="assignment" x="-17" y="59">W2H_Request=true,
 id_sender=id</label>
 		</transition>
 	</template>
-	<system>system HAP,WD;
+	<system>
+WD0=WD(0);
+WD1=WD(1);
+WD2=WD(2);
+HAP1=HAP();
+system WD0,WD1,WD2,HAP1;
 </system>
 	<queries>
 		<query>
 			<formula/>
+			<comment>===== Accessibilité (Reachability):</comment>
+		</query>
+		<query>
+			<formula>E&lt;&gt; WD0.SignalReception</formula>
+			<comment>WD0 can recieve signals</comment>
+			<result outcome="success" type="quality" timestamp="2024-04-28 18:08:47 +0100">
+			</result>
+		</query>
+		<query>
+			<formula>E&lt;&gt; WD2.SignalReception</formula>
 			<comment/>
+			<result outcome="success" type="quality" timestamp="2024-04-28 18:08:51 +0100">
+			</result>
+		</query>
+		<query>
+			<formula>E&lt;&gt; WD1.SignalReception</formula>
+			<comment/>
+			<result outcome="success" type="quality" timestamp="2024-04-29 13:40:57 +0100">
+			</result>
+		</query>
+		<query>
+			<formula>E&lt;&gt; WD0.SignalReception and WD1.Idle and WD2.Idle </formula>
+			<comment/>
+			<result outcome="success" type="quality" timestamp="2024-04-28 18:08:55 +0100">
+			</result>
+		</query>
+		<query>
+			<formula>E&lt;&gt; WD2.SignalReception and WD0.Idle and WD1.Idle </formula>
+			<comment/>
+			<result outcome="success" type="quality" timestamp="2024-04-28 18:08:57 +0100">
+			</result>
+		</query>
+		<query>
+			<formula>A[] not deadlock</formula>
+			<comment>Not deadlocks at all</comment>
+			<result outcome="success" type="quality" timestamp="2024-04-29 11:50:21 +0100">
+			</result>
+		</query>
+		<query>
+			<formula>E&lt;&gt; WD1.SignalReception and WD0.Idle and WD2.Idle</formula>
+			<comment>When WD1 goes to signal reception the other wirless devices harvest energy</comment>
+			<result outcome="success" type="quality" timestamp="2024-04-28 18:09:00 +0100">
+			</result>
 		</query>
 	</queries>
 </nta>
