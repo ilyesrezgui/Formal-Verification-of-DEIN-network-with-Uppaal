@@ -170,7 +170,7 @@ system WD0,WD1,WD2,HAP1;
 		</query>
 		<query>
 			<formula>WD1.SignalReception --&gt; WD0.Idle and WD2.Idle</formula>
-			<comment>One wirless device is recieving a signal at a time. in here WD1 is recieving.</comment>
+			<comment>One wireless device is receiving a signal at a time. in here WD1 is recieving.</comment>
 			<result outcome="success" type="quality" timestamp="2024-04-29 16:00:31 +0100">
 			</result>
 		</query>
@@ -210,6 +210,24 @@ system WD0,WD1,WD2,HAP1;
 			<formula>A[] WD2.EWD&lt;=WD2.capacity</formula>
 			<comment>The energy harvested by a WD should always be lower or equal than the capacity of the WD</comment>
 			<result outcome="success" type="quality" timestamp="2024-04-29 16:07:55 +0100">
+			</result>
+		</query>
+		<query>
+			<formula>E&lt;&gt; not WD2.DataTransmission and (WD0.SignalReception or WD1.SignalReception)</formula>
+			<comment>At some point in the future, WD2 is not in the state of DataTransmission, and at the same time, WD0 is in the state of SignalReception or WD1 is in the state of SignalReception.</comment>
+			<result outcome="success" type="quality" timestamp="2024-04-29 22:07:31 +0100">
+			</result>
+		</query>
+		<query>
+			<formula>E&lt;&gt; not WD0.DataTransmission and (WD1.SignalReception or WD2.SignalReception)</formula>
+			<comment/>
+			<result outcome="success" type="quality" timestamp="2024-04-29 22:08:04 +0100">
+			</result>
+		</query>
+		<query>
+			<formula>E&lt;&gt; not WD1.DataTransmission and (WD0.SignalReception or WD2.SignalReception)</formula>
+			<comment/>
+			<result outcome="success" type="quality" timestamp="2024-04-29 22:08:15 +0100">
 			</result>
 		</query>
 	</queries>
