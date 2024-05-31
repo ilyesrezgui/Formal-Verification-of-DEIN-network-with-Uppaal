@@ -5,4 +5,4 @@ This is a formal verification of the proposed network in the context of 5G netwo
 * Joint Uplink and Downlink Resource Allocation in Data and Energy Integrated Communication Networks
 * Distributed Batteryless Access Control for Data and Energy Integrated Networks: Modeling and Performance Analysis
 
-We use UPPAAL for simulation and model checking and we study the enrgy aspect of the network: Energy consumption through data link transmission and energy harvesting through Radio Frequency(RF) electro-magnetic Signals.
+We use UPPAAL for simulation and model checking and we study the energy aspect of the network: Energy consumption through data link transmission and energy harvesting through Radio Frequency(RF) electro-magnetic Signals.
