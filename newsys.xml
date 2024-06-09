@@ -4,6 +4,8 @@
 	<declaration>int ES=3; // the enrgy of the signal transmitted/recieved
 const int N=3;
 typedef int[0,N-1] id_wd;
+
+
 broadcast chan HAP2WD;
 id_wd id_sender;
 chan Send_Data, Data_Sent, WD2HAP_REQ[N];
@@ -12,6 +14,9 @@ chan Send_Data, Data_Sent, WD2HAP_REQ[N];
 	<template>
 		<name x="5" y="5">HAP</name>
 		<declaration>int id_sender=0;
+
+const int N=3;
+typedef int[0,N-1] id_wd;
 
 
 
@@ -54,19 +59,27 @@ chan Send_Data, Data_Sent, WD2HAP_REQ[N];
 	</template>
 	<template>
 		<name>WD</name>
-		<parameter>const id_wd id</parameter>
-		<declaration>int Epack=1;
-int EWD=0;
-int Energy_Harvested=1;
-bool W2H_Request=false;
-int capacity=10;
+		<parameter>const id_wd id,int distance</parameter>
+		<declaration>int Epack=1;  //energy needed to send data from WD to Hap the data, depends from the type of WD and from the length of the data packet.
+// for the experimenetation we fix the data packet length for 22  bits. 
+// Epack is between  50 and 150 joules/bit thereforre we can experiment with different WD as if their Epack varies in this interval. https://ieeexplore.ieee.org/stamp/stamp.jsp?arnumber=926982&amp;casa_token=CY91gfh4z3QAAAAA:LwHXMRRpp1FtJKmkkgocV5xEL4IQnJpWJReicFjICJNgINxauj1WHDSbmmReYVPAjwCt8KnMutFO0bs
+int nbbit=22; // represents the number of bits for a message. Article : Create Your Own Data and Energy Integrated Communication Network: A Brief Tutorial and a  Prototype System
+
+double EWD=0; // represnts the capacity of super capacitator : when sending a packet EWD=EWD-(nbbit*Epack)
+int Energy_Harvested=1; //The percentage of energy to harvest if you're the requester.
+bool W2H_Request=false;  
+int capacity=10; // max capacity of super capacitator between 10 and 150
+// you can add an int representing the distance %  au HAP, to model the impact of ditance per each WD
+// try to look for the correct formula to calculate the energy harvested based on the distance with WD.
+// the buggesr the sitance the less energy is harvested
 //int Elost=0;
 
-int verif_capacity(int x, int y){
-    if (x+y&gt; capacity){
-//energylost(x,y);
+double verif_capacity(double x,double y){
+x=x*(3*3.14*distance)*(3*3.14*distance); 
+
+if (x+y&gt; capacity){
         return capacity;    
-    } 
+    }
     else {
         return x+y;}
 }
@@ -74,21 +87,26 @@ int verif_capacity(int x, int y){
     //return Elost=Elost+(x+y-capacity); 
 //}
 
+
+
+
+
+// RF Energy Harvesting J Szut, P Piątek, M Pauluk - Energies, 2024 - mdpi.com
 </declaration>
 		<location id="id7" x="-204" y="34">
-			<name x="-230" y="51">Idle</name>
+			<name x="-221" y="51">Idle</name>
 		</location>
 		<location id="id8" x="289" y="42">
-			<name x="323" y="34">SignalReception</name>
+			<name x="306" y="34">SignalReception</name>
 		</location>
 		<location id="id9" x="-527" y="-187">
-			<name x="-537" y="-221">DataTransmission</name>
+			<name x="-578" y="-221">DataTransmission</name>
 		</location>
 		<init ref="id7"/>
 		<transition id="id10">
 			<source ref="id9"/>
 			<target ref="id7"/>
-			<label kind="synchronisation" x="-620" y="25">Data_Sent?</label>
+			<label kind="synchronisation" x="-620" y="-17">Data_Sent?</label>
 			<nail x="-527" y="76"/>
 			<nail x="-527" y="76"/>
 		</transition>
@@ -128,12 +146,10 @@ W2H_Request=false</label>
 id_sender=id</label>
 		</transition>
 	</template>
-	<system>
-WD0=WD(0);
-WD1=WD(1);
-WD2=WD(2);
-HAP1=HAP();
-system WD0,WD1,WD2,HAP1;
+	<system>WD0=WD(0,25);
+WD1=WD(1,20);
+WD2=WD(2,35);
+system WD1,WD0,WD2,HAP;
 </system>
 	<queries>
 		<query>
@@ -153,10 +169,8 @@ system WD0,WD1,WD2,HAP1;
 			</result>
 		</query>
 		<query>
-			<formula>E&lt;&gt; WD1.SignalReception</formula>
+			<formula>E&lt;&gt; WD1.SignalReception.</formula>
 			<comment>The SignalReception state can be reached eventually by WD1.</comment>
-			<result outcome="success" type="quality" timestamp="2024-04-29 13:40:57 +0100">
-			</result>
 		</query>
 		<query>
 			<formula/>
