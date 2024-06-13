@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE nta PUBLIC '-//Uppaal Team//DTD Flat System 1.6//EN' 'http://www.it.uu.se/research/group/darts/uppaal/flat-1_6.dtd'>
 <nta>
-	<declaration>int ES=3; // the enrgy of the signal transmitted/recieved
-const int N=3;
+	<declaration>double ES=6; // the enrgy of the signal transmitted/recieved
+const int N=5;
 typedef int[0,N-1] id_wd;
 
 
@@ -59,39 +59,67 @@ typedef int[0,N-1] id_wd;
 	</template>
 	<template>
 		<name>WD</name>
-		<parameter>const id_wd id,int distance</parameter>
+		<parameter>const id_wd id,int distance,double EWD</parameter>
 		<declaration>int Epack=1;  //energy needed to send data from WD to Hap the data, depends from the type of WD and from the length of the data packet.
 // for the experimenetation we fix the data packet length for 22  bits. 
 // Epack is between  50 and 150 joules/bit thereforre we can experiment with different WD as if their Epack varies in this interval. https://ieeexplore.ieee.org/stamp/stamp.jsp?arnumber=926982&amp;casa_token=CY91gfh4z3QAAAAA:LwHXMRRpp1FtJKmkkgocV5xEL4IQnJpWJReicFjICJNgINxauj1WHDSbmmReYVPAjwCt8KnMutFO0bs
-int nbbit=22; // represents the number of bits for a message. Article : Create Your Own Data and Energy Integrated Communication Network: A Brief Tutorial and a  Prototype System
+//int nbbit=22; // represents the number of bits for a message. Article : Create Your Own Data and Energy Integrated Communication Network: A Brief Tutorial and a  Prototype System
 
-double EWD=0; // represnts the capacity of super capacitator : when sending a packet EWD=EWD-(nbbit*Epack)
-int Energy_Harvested=1; //The percentage of energy to harvest if you're the requester.
+//double EWD=0; // represnts the capacity of super capacitator : when sending a packet EWD=EWD-(nbbit*Epack)
+double Energy_Harvested=3; //The percentage of energy to harvest if you're the requester.
 bool W2H_Request=false;  
-int capacity=10; // max capacity of super capacitator between 10 and 150
+double capacity=10; // max capacity of super capacitator between 10 and 150
 // you can add an int representing the distance %  au HAP, to model the impact of ditance per each WD
 // try to look for the correct formula to calculate the energy harvested based on the distance with WD.
 // the buggesr the sitance the less energy is harvested
 //int Elost=0;
 
-double verif_capacity(double x,double y){
-x=x*(3*3.14*distance)*(3*3.14*distance); 
+double Threshold_for_sending = 2; // represnts the threshhold for sending since sending data to hap also consumes energy for data encoding.
 
-if (x+y&gt; capacity){
+
+const double M_PI       = 3.141592653589793115997963468544185161590576171875; // to define pi , took the value from uppaal offical documentation https://docs.uppaal.org/language-reference/expressions/
+const double SPEED_OF_LIGHT = 299792458;
+
+
+// this function calulates lambda value represnting the wavelength
+double calculateWavelength(double frequency) {
+    return SPEED_OF_LIGHT / frequency;
+}
+
+// this will calculate the path loss L
+double calculateFSPL(double distanceMeters, double frequencyHz) {
+    // Calculate the FSPL in dB
+    double fspl = 20 * log10(distanceMeters) + 20 * log10(frequencyHz) - 147.55;
+
+    return fspl;
+}
+
+double calculateReceivedPower(double PT, double GT, double GR, double frequency_in_Hz, double d) {
+    double lambda = calculateWavelength(frequency_in_Hz);
+    double L_dB = calculateFSPL(d, frequency_in_Hz);
+    double L = pow(10, L_dB / 10.0); // Convert FSPL from dB to linear scale
+
+    // Calculate the received power using the Friis transmission equation
+    double numerator = PT * GT * GR * pow(lambda, 2);
+    double denominator = pow(4 * M_PI * d, 2) * L;
+    double PR = numerator / denominator;
+    return PR;
+}
+
+
+
+
+double verif_capacity(double x,double y){
+// we want to analyse energy lost with repsect to distance  
+double k=x;
+k=calculateReceivedPower(x,3.8,3.8,915e3,distance);
+if (k+y&gt; capacity){
         return capacity;    
     }
     else {
-        return x+y;}
+        return k+y;}
 }
-//int energylost(int x, int y){
-    //return Elost=Elost+(x+y-capacity); 
-//}
 
-
-
-
-
-// RF Energy Harvesting J Szut, P Piątek, M Pauluk - Energies, 2024 - mdpi.com
 </declaration>
 		<location id="id7" x="-204" y="34">
 			<name x="-221" y="51">Idle</name>
@@ -113,9 +141,10 @@ if (x+y&gt; capacity){
 		<transition id="id11">
 			<source ref="id7"/>
 			<target ref="id9"/>
-			<label kind="guard" x="-408" y="-161">EWD-Epack&gt;=0</label>
-			<label kind="synchronisation" x="-408" y="-145">Send_Data!</label>
-			<label kind="assignment" x="-408" y="-127">EWD=EWD-Epack</label>
+			<label kind="guard" x="-442" y="-187">EWD-Epack&gt;=0 and 
+EWD&gt;=Threshold_for_sending</label>
+			<label kind="synchronisation" x="-442" y="-153">Send_Data!</label>
+			<label kind="assignment" x="-442" y="-136">EWD=EWD-Epack</label>
 		</transition>
 		<transition id="id12">
 			<source ref="id7"/>
@@ -146,10 +175,12 @@ W2H_Request=false</label>
 id_sender=id</label>
 		</transition>
 	</template>
-	<system>WD0=WD(0,25);
-WD1=WD(1,20);
-WD2=WD(2,35);
-system WD1,WD0,WD2,HAP;
+	<system>WD0=WD(0,50,2);
+WD1=WD(1,50,4);
+WD2=WD(2,50,6);
+WD3=WD(3,50,8);
+WD4=WD(4,50,10);
+system WD1,WD0,WD2,WD3,WD4,HAP;
 </system>
 	<queries>
 		<query>
@@ -201,8 +232,6 @@ system WD1,WD0,WD2,HAP;
 		<query>
 			<formula>A[] not deadlock</formula>
 			<comment>No deadlocks at all</comment>
-			<result outcome="success" type="quality" timestamp="2024-04-29 16:17:54 +0100">
-			</result>
 		</query>
 		<query>
 			<formula/>
