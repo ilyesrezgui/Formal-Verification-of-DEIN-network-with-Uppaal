@@ -1,85 +1,124 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE nta PUBLIC '-//Uppaal Team//DTD Flat System 1.6//EN' 'http://www.it.uu.se/research/group/darts/uppaal/flat-1_6.dtd'>
 <nta>
-	<declaration>double ES=6; // the enrgy of the signal transmitted/recieved
-const int N=5;
-typedef int[0,N-1] id_wd;
+	<declaration>
+    const int N=3;
+    typedef int[0,N-1] id_wd;
+    
+    double lamda=35; //lamda en cm
+    double energy_lost;
 
 
-broadcast chan HAP2WD;
-id_wd id_sender;
-chan Send_Data, Data_Sent, WD2HAP_REQ[N];
+    double nbBit = 4; // Nombre de bits pour un message
 
-</declaration>
+    broadcast chan HAP2WD;
+
+    chan Send_Data[N],Data_Sent, WD2HAP_REQ[N];
+    
+    double globalE_Sent;
+  </declaration>
 	<template>
 		<name x="5" y="5">HAP</name>
-		<declaration>int id_sender=0;
+		<declaration>    int totSendIt;
+    const int N=3;
+    typedef int[0,N-1] id_wd;
+    id_wd id_sender;
+    id_wd id_sending_wd;
+    int E_sent =400;
+    int Nb_data_sent[N]={0,0,0};
+    clock time_to_return; // time needed to return to the idel state after data reception
+    int period_for_recieving= 10;
+ 
+void incrementAtId(int&amp; Nb_data_sent[N], int id) {
+        Nb_data_sent[id]=Nb_data_sent[id]+1; 
+    }
 
-const int N=3;
-typedef int[0,N-1] id_wd;
+
+
+
+
+
+
+
+    
+   
+
+
+
+
 
 
 
 </declaration>
 		<location id="id0" x="-93" y="-25">
-			<name x="-103" y="-59">Idle</name>
+			<name x="-110" y="-8">Idle</name>
 		</location>
-		<location id="id1" x="467" y="-59">
-			<name x="493" y="-68">SignalTransmission</name>
+		<location id="id1" x="442" y="-34">
+			<name x="468" y="-43">SignalTransmission</name>
 		</location>
-		<location id="id2" x="-272" y="-323">
-			<name x="-282" y="-357">DataReception</name>
+		<location id="id2" x="-433" y="-212">
+			<name x="-459" y="-255">DataReception</name>
+			<label kind="invariant" x="-552" y="-272">time_to_return&lt;=period_for_recieving</label>
 		</location>
 		<init ref="id0"/>
 		<transition id="id3">
 			<source ref="id2"/>
 			<target ref="id0"/>
-			<label kind="synchronisation" x="-408" y="-187">Data_Sent!</label>
-			<nail x="-357" y="-34"/>
-			<nail x="-357" y="-34"/>
+			<label kind="assignment" x="-408" y="-25">time_to_return=0</label>
+			<nail x="-433" y="-34"/>
+			<nail x="-289" y="-34"/>
 		</transition>
 		<transition id="id4">
 			<source ref="id0"/>
 			<target ref="id2"/>
-			<label kind="synchronisation" x="-212" y="-255">Send_Data?</label>
+			<label kind="select" x="-263" y="-238">id:id_wd</label>
+			<label kind="synchronisation" x="-263" y="-221">Send_Data[id]?</label>
+			<label kind="assignment" x="-263" y="-204">id_sending_wd=id,
+incrementAtId(Nb_data_sent,id),
+time_to_return=0</label>
 		</transition>
 		<transition id="id5">
 			<source ref="id1"/>
 			<target ref="id0"/>
-			<label kind="synchronisation" x="119" y="-68">HAP2WD!</label>
+			<label kind="synchronisation" x="136" y="-68">HAP2WD!</label>
 		</transition>
 		<transition id="id6">
 			<source ref="id0"/>
 			<target ref="id1"/>
-			<label kind="select" x="-68" y="-212">id:id_wd</label>
-			<label kind="synchronisation" x="-68" y="-195">WD2HAP_REQ[id]?</label>
-			<label kind="assignment" x="-68" y="-178">id_sender=id</label>
+			<label kind="select" x="263" y="-272">id:id_wd</label>
+			<label kind="synchronisation" x="263" y="-246">WD2HAP_REQ[id]?</label>
+			<label kind="assignment" x="263" y="-221">id_sender=id,
+totSendIt=totSendIt+1,
+globalE_Sent=E_sent</label>
 			<nail x="136" y="-212"/>
 		</transition>
 	</template>
 	<template>
 		<name>WD</name>
-		<parameter>const id_wd id,int distance,double EWD</parameter>
-		<declaration>int Epack=1;  //energy needed to send data from WD to Hap the data, depends from the type of WD and from the length of the data packet.
-// for the experimenetation we fix the data packet length for 22  bits. 
-// Epack is between  50 and 150 joules/bit thereforre we can experiment with different WD as if their Epack varies in this interval. https://ieeexplore.ieee.org/stamp/stamp.jsp?arnumber=926982&amp;casa_token=CY91gfh4z3QAAAAA:LwHXMRRpp1FtJKmkkgocV5xEL4IQnJpWJReicFjICJNgINxauj1WHDSbmmReYVPAjwCt8KnMutFO0bs
-//int nbbit=22; // represents the number of bits for a message. Article : Create Your Own Data and Energy Integrated Communication Network: A Brief Tutorial and a  Prototype System
+		<parameter>const id_wd id, double EpckPerBit ,double Sensing_Value  ,double distance, double maxCapacity,double E_Current_Quantity,double E_Current_Percentage </parameter>
+		<declaration>     // double EpckPerBit = 1;  // Énergie consommée et nécessaire pour envoyer des données de WD à HAP.
+     // double E_Current_Percentage;  // Représente le pourcentage, calculé plus tard.
+      double decodingPercentage = 0.4;
+      double E_received;
+      double E_Harvested; // we have
+      double E_Decoded; 
+      
+      double T_E_Decoded;
+      
+      double E_Loss_Distance;
+      double T_E_Loss_Distance;
+      
+      double E_Cap_Surplus;
+      double T_E_Cap_Surplus=0;
+      
+      double consumed_E_QuantityPerMessage;
+      double T_E_consumed_for_Messages=0;
+      
+      double E_Loss_Below_Sensing;
+      double T_E_Loss_Below_Sensing;
 
-//double EWD=0; // represnts the capacity of super capacitator : when sending a packet EWD=EWD-(nbbit*Epack)
-double Energy_Harvested=3; //The percentage of energy to harvest if you're the requester.
-bool W2H_Request=false;  
-double capacity=10; // max capacity of super capacitator between 10 and 150
-// you can add an int representing the distance %  au HAP, to model the impact of ditance per each WD
-// try to look for the correct formula to calculate the energy harvested based on the distance with WD.
-// the buggesr the sitance the less energy is harvested
-//int Elost=0;
-
-double Threshold_for_sending = 2; // represnts the threshhold for sending since sending data to hap also consumes energy for data encoding.
-
-
-const double M_PI       = 3.141592653589793115997963468544185161590576171875; // to define pi , took the value from uppaal offical documentation https://docs.uppaal.org/language-reference/expressions/
-const double SPEED_OF_LIGHT = 299792458;
-
+      const double M_PI       = 3.141592653589793115997963468544185161590576171875; // to define pi , took the value from uppaal offical documentation https://docs.uppaal.org/language-reference/expressions/
+      const double SPEED_OF_LIGHT = 299792458;
 
 // this function calulates lambda value represnting the wavelength
 double calculateWavelength(double frequency) {
@@ -108,80 +147,107 @@ double calculateReceivedPower(double PT, double GT, double GR, double frequency_
 
 
 
-
+// y heya E_Current_Quantity
+// x heya E_Harvested
 double verif_capacity(double x,double y){
 // we want to analyse energy lost with repsect to distance  
 double k=x;
 k=calculateReceivedPower(x,3.8,3.8,915e3,distance);
-if (k+y&gt; capacity){
-        return capacity;    
+if (k+y&gt;maxCapacity){
+        energy_lost= energy_lost+(k+y-maxCapacity);
+        T_E_Loss_Distance=T_E_Loss_Distance +(k+y-maxCapacity);
+        return maxCapacity;  
     }
     else {
         return k+y;}
 }
 
-</declaration>
-		<location id="id7" x="-204" y="34">
-			<name x="-221" y="51">Idle</name>
+      
+    
+    
+    
+    </declaration>
+		<location id="id7" x="-41" y="-26">
+			<name x="-58" y="-8">Idle</name>
 		</location>
-		<location id="id8" x="289" y="42">
-			<name x="306" y="34">SignalReception</name>
+		<location id="id8" x="811" y="-26">
+			<name x="828" y="-34">SignalReception</name>
 		</location>
-		<location id="id9" x="-527" y="-187">
-			<name x="-578" y="-221">DataTransmission</name>
+		<location id="id9" x="-564" y="-220">
+			<name x="-675" y="-254">DataTransmission</name>
 		</location>
 		<init ref="id7"/>
 		<transition id="id10">
 			<source ref="id9"/>
 			<target ref="id7"/>
-			<label kind="synchronisation" x="-620" y="-17">Data_Sent?</label>
-			<nail x="-527" y="76"/>
-			<nail x="-527" y="76"/>
+			<nail x="-629" y="8"/>
 		</transition>
 		<transition id="id11">
 			<source ref="id7"/>
 			<target ref="id9"/>
-			<label kind="guard" x="-442" y="-187">EWD-Epack&gt;=0 and 
-EWD&gt;=Threshold_for_sending</label>
-			<label kind="synchronisation" x="-442" y="-153">Send_Data!</label>
-			<label kind="assignment" x="-442" y="-136">EWD=EWD-Epack</label>
+			<label kind="guard" x="-595" y="-374">E_Current_Quantity &gt;= EpckPerBit * nbBit</label>
+			<label kind="synchronisation" x="-595" y="-391">Send_Data[id]!</label>
+			<label kind="assignment" x="-595" y="-348">consumed_E_QuantityPerMessage = EpckPerBit * nbBit,
+T_E_consumed_for_Messages=T_E_consumed_for_Messages+consumed_E_QuantityPerMessage,
+E_Current_Quantity = E_Current_Quantity - consumed_E_QuantityPerMessage,
+E_Current_Percentage = (E_Current_Quantity * 100) / maxCapacity</label>
 		</transition>
 		<transition id="id12">
 			<source ref="id7"/>
 			<target ref="id7"/>
-			<label kind="guard" x="-365" y="127">id!=id_sender</label>
-			<label kind="synchronisation" x="-323" y="144">HAP2WD?</label>
-			<label kind="assignment" x="-467" y="161">EWD=verif_capacity(ES,EWD)</label>
-			<nail x="-272" y="85"/>
-			<nail x="-212" y="170"/>
-			<nail x="-144" y="119"/>
-			<nail x="-161" y="59"/>
+			<label kind="guard" x="-756" y="76">globalE_Sent/distance&gt;=Sensing_Value</label>
+			<label kind="synchronisation" x="-76" y="115">HAP2WD?</label>
+			<label kind="assignment" x="-756" y="102">E_received=globalE_Sent/distance,
+E_Harvested = E_received,
+E_Harvested = (E_Current_Quantity + E_Harvested &gt; maxCapacity) ? (maxCapacity - E_Current_Quantity) : E_Harvested,
+E_Loss_Distance=globalE_Sent-E_received,
+T_E_Loss_Distance=T_E_Loss_Distance+E_Loss_Distance,
+E_Cap_Surplus = (E_Current_Quantity + E_Harvested &gt; maxCapacity) ? (E_Current_Quantity + E_Harvested - maxCapacity) : 0.0,
+T_E_Cap_Surplus=T_E_Cap_Surplus+E_Cap_Surplus,
+E_Current_Quantity = E_Current_Quantity + E_Harvested ,
+E_Current_Percentage = (E_Current_Quantity * 100) / maxCapacity</label>
+			<nail x="-109" y="25"/>
+			<nail x="-49" y="110"/>
+			<nail x="19" y="59"/>
+			<nail x="2" y="-1"/>
 		</transition>
 		<transition id="id13">
 			<source ref="id8"/>
 			<target ref="id7"/>
-			<label kind="guard" x="-119" y="-136">id==id_sender</label>
-			<label kind="synchronisation" x="-119" y="-153">HAP2WD?</label>
-			<label kind="assignment" x="-119" y="-195">EWD=verif_capacity(Energy_Harvested,EWD),
-W2H_Request=false</label>
-			<nail x="34" y="-144"/>
-			<nail x="-170" y="8"/>
+			<label kind="guard" x="467" y="-459">globalE_Sent/distance&gt;Sensing_Value</label>
+			<label kind="synchronisation" x="467" y="-476">HAP2WD?</label>
+			<label kind="assignment" x="467" y="-433">E_received=  globalE_Sent/distance,
+E_Harvested = E_received * (1 - decodingPercentage),
+E_Decoded = E_received * decodingPercentage,
+T_E_Decoded=T_E_Decoded+E_Decoded,
+
+
+E_Loss_Distance=globalE_Sent-E_received,
+T_E_Loss_Distance=T_E_Loss_Distance+E_Loss_Distance,
+E_Cap_Surplus = (E_Current_Quantity + E_Harvested &gt; maxCapacity) ? (E_Current_Quantity + E_Harvested - maxCapacity) : 0.0,
+T_E_Cap_Surplus=T_E_Cap_Surplus+E_Cap_Surplus,
+
+
+E_Current_Quantity = E_Current_Quantity + E_Harvested ,
+E_Current_Percentage = (E_Current_Quantity * 100) / maxCapacity</label>
+			<nail x="273" y="-155"/>
+			<nail x="-7" y="-46"/>
 		</transition>
 		<transition id="id14">
 			<source ref="id7"/>
 			<target ref="id8"/>
-			<label kind="synchronisation" x="-17" y="42">WD2HAP_REQ[id]!</label>
-			<label kind="assignment" x="-17" y="59">W2H_Request=true,
-id_sender=id</label>
+			<label kind="guard" x="240" y="11">E_Current_Quantity &gt; EpckPerBit * nbBit</label>
+			<label kind="synchronisation" x="241" y="-8">WD2HAP_REQ[id]!</label>
+			<label kind="assignment" x="240" y="31">consumed_E_QuantityPerMessage = EpckPerBit * nbBit,
+T_E_consumed_for_Messages=T_E_consumed_for_Messages+consumed_E_QuantityPerMessage,
+E_Current_Quantity = E_Current_Quantity - consumed_E_QuantityPerMessage</label>
 		</transition>
 	</template>
-	<system>WD0=WD(0,50,2);
-WD1=WD(1,50,4);
-WD2=WD(2,50,6);
-WD3=WD(3,50,8);
-WD4=WD(4,50,10);
-system WD1,WD0,WD2,WD3,WD4,HAP;
-</system>
+	<system>// id_wd, EpckPerBit, Sensing_Value, distance, maxCapacity, E_Current_Quantity, E_Current_Percentage
+    WD0 = WD(0, 2000, 4, 20, 550000, 55000, 10);
+    WD1 = WD(1, 1000, 2, 20, 80000, 40000, 50);
+    WD2 = WD(2, 3000, 3, 35, 200000, 50000, 25);
+    system WD1, WD0, WD2, HAP;</system>
 	<queries>
 		<query>
 			<formula/>
@@ -190,14 +256,10 @@ system WD1,WD0,WD2,WD3,WD4,HAP;
 		<query>
 			<formula>E&lt;&gt; WD0.SignalReception</formula>
 			<comment>The SignalReception state can be reached eventually by WD0.</comment>
-			<result outcome="success" type="quality" timestamp="2024-04-28 18:08:47 +0100">
-			</result>
 		</query>
 		<query>
 			<formula>E&lt;&gt; WD2.SignalReception</formula>
 			<comment>The SignalReception state can be reached eventually by WD2.</comment>
-			<result outcome="success" type="quality" timestamp="2024-04-28 18:08:51 +0100">
-			</result>
 		</query>
 		<query>
 			<formula>E&lt;&gt; WD1.SignalReception.</formula>
@@ -205,25 +267,20 @@ system WD1,WD0,WD2,WD3,WD4,HAP;
 		</query>
 		<query>
 			<formula/>
-			<comment>===== Liveness Properties:
-			</comment>
+			<comment>===== Liveness Properties:</comment>
 		</query>
 		<query>
 			<formula>HAP1.SignalTransmission --&gt; WD2.SignalReception or WD1.SignalReception or WD0.SignalReception
-</formula>
-			<comment>When a HAP is about transmitting a Signal, one of the WDs should eventually be recieving it.</comment>
+      </formula>
+			<comment>When a HAP is about transmitting a Signal, one of the WDs should eventually be receiving it.</comment>
 		</query>
 		<query>
 			<formula>WD1.SignalReception --&gt; WD0.Idle and WD2.Idle</formula>
-			<comment>One wireless device is receiving a signal at a time. in here WD1 is recieving.</comment>
-			<result outcome="success" type="quality" timestamp="2024-04-29 16:00:31 +0100">
-			</result>
+			<comment>One wireless device is receiving a signal at a time. In here WD1 is receiving.</comment>
 		</query>
 		<query>
 			<formula>WD2.SignalReception --&gt; WD0.Idle and WD1.Idle</formula>
-			<comment>One wirless device is recieving a signal at a time. in here WD2 is recieving.</comment>
-			<result outcome="success" type="quality" timestamp="2024-04-29 16:00:51 +0100">
-			</result>
+			<comment>One wireless device is receiving a signal at a time. In here WD2 is receiving.</comment>
 		</query>
 		<query>
 			<formula/>
@@ -238,40 +295,28 @@ system WD1,WD0,WD2,WD3,WD4,HAP;
 			<comment>===== Safety Properties:</comment>
 		</query>
 		<query>
-			<formula>A[] WD0.EWD&lt;=WD0.capacity</formula>
-			<comment>The energy harvested by a WD should always be lower or equal than the capacity of the WD</comment>
-			<result outcome="success" type="quality" timestamp="2024-04-29 16:07:28 +0100">
-			</result>
+			<formula>A[] WD0.EWD &lt;= WD0.capacity</formula>
+			<comment>The energy harvested by a WD should always be lower or equal to the capacity of the WD</comment>
 		</query>
 		<query>
-			<formula>A[] WD1.EWD&lt;=WD1.capacity</formula>
-			<comment>The energy harvested by a WD should always be lower or equal than the capacity of the WD</comment>
-			<result outcome="success" type="quality" timestamp="2024-04-29 16:07:46 +0100">
-			</result>
+			<formula>A[] WD1.EWD &lt;= WD1.capacity</formula>
+			<comment>The energy harvested by a WD should always be lower or equal to the capacity of the WD</comment>
 		</query>
 		<query>
-			<formula>A[] WD2.EWD&lt;=WD2.capacity</formula>
-			<comment>The energy harvested by a WD should always be lower or equal than the capacity of the WD</comment>
-			<result outcome="success" type="quality" timestamp="2024-04-29 16:07:55 +0100">
-			</result>
+			<formula>A[] WD2.EWD &lt;= WD2.capacity</formula>
+			<comment>The energy harvested by a WD should always be lower or equal to the capacity of the WD</comment>
 		</query>
 		<query>
 			<formula>E&lt;&gt; not WD2.DataTransmission and (WD0.SignalReception or WD1.SignalReception)</formula>
 			<comment>At some point in the future, WD2 is not in the state of DataTransmission, and at the same time, WD0 is in the state of SignalReception or WD1 is in the state of SignalReception.</comment>
-			<result outcome="success" type="quality" timestamp="2024-04-29 22:07:31 +0100">
-			</result>
 		</query>
 		<query>
 			<formula>E&lt;&gt; not WD0.DataTransmission and (WD1.SignalReception or WD2.SignalReception)</formula>
 			<comment/>
-			<result outcome="success" type="quality" timestamp="2024-04-29 22:08:04 +0100">
-			</result>
 		</query>
 		<query>
 			<formula>E&lt;&gt; not WD1.DataTransmission and (WD0.SignalReception or WD2.SignalReception)</formula>
 			<comment/>
-			<result outcome="success" type="quality" timestamp="2024-04-29 22:08:15 +0100">
-			</result>
 		</query>
 	</queries>
 </nta>
