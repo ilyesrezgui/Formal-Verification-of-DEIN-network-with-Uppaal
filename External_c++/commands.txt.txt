@@ -1,0 +1,6 @@
+g++ -std=c++17 -Wpedantic -Wall -Wextra -fPIC -g -Og -o external.o -c external.cpp
+gcc -shared -o libexternal.so external.o
+
+
+
+

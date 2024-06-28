@@ -9,7 +9,7 @@
     double energy_lost;
 
 
-    double nbBit = 4; // Nombre de bits pour un message
+    double nbBit = 5; // Nombre de bits pour un message
 
     broadcast chan HAP2WD;
 
@@ -144,7 +144,6 @@ double calculateReceivedPower(double PT, double GT, double GR, double frequency_
     double PR = numerator / denominator;
     return PR;
 }
-
 
 
 // y heya E_Current_Quantity
