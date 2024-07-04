@@ -2,7 +2,7 @@
 <!DOCTYPE nta PUBLIC '-//Uppaal Team//DTD Flat System 1.6//EN' 'http://www.it.uu.se/research/group/darts/uppaal/flat-1_6.dtd'>
 <nta>
 	<declaration>// the enrgy of the signal transmitted/recieved
-const int N=5;
+const int N=3;
 
 typedef int[0,N-1] id_wd;
 
@@ -12,7 +12,7 @@ int nbBit = 4;
 broadcast chan HAP2WD;
 
 chan Send_Data[N], Data_Sent, WD2HAP_REQ[N];
-//chan priority default &lt; HAP2WD &lt; WD2HAP_REQ[N];
+
 
 int globalE_Sent;</declaration>
 	<template>
@@ -24,9 +24,10 @@ int totSendIt;
 id_wd id_sender;
 id_wd id_sending_wd;
 int E_sent =400;
-int Nb_data_sent[N]={0,0,0,0,0};
+int Nb_data_sent[N]={0,0,0};
 clock HAP_return; // time needed to return to the idel state after data reception
 int period_for_recieving= 10;
+bool sending=false;
  
 void incrementAtId(int&amp; Nb_data_sent[N], int id) {
         Nb_data_sent[id]=Nb_data_sent[id]+1; 
@@ -57,16 +58,17 @@ void incrementAtId(int&amp; Nb_data_sent[N], int id) {
 		<transition id="id4">
 			<source ref="id0"/>
 			<target ref="id2"/>
-			<label kind="select" x="-187" y="-238">id:id_wd</label>
-			<label kind="synchronisation" x="-187" y="-221">Send_Data[id]?</label>
-			<label kind="assignment" x="-187" y="-204">id_sending_wd=id,
-incrementAtId(Nb_data_sent,id),
+			<label kind="select" x="-204" y="-238">id:id_wd</label>
+			<label kind="synchronisation" x="-204" y="-221">Send_Data[id]?</label>
+			<label kind="assignment" x="-204" y="-204">id_sending_wd=id,
+incrementAtId(Nb_data_sent,id_sending_wd),
 HAP_return=0</label>
 		</transition>
 		<transition id="id5">
 			<source ref="id1"/>
 			<target ref="id0"/>
 			<label kind="synchronisation" x="42" y="-42">HAP2WD!</label>
+			<label kind="assignment" x="8" y="-17">sending=false</label>
 		</transition>
 		<transition id="id6">
 			<source ref="id0"/>
@@ -75,26 +77,24 @@ HAP_return=0</label>
 			<label kind="synchronisation" x="161" y="-161">WD2HAP_REQ[id]?</label>
 			<label kind="assignment" x="161" y="-144">id_sender=id,
 totSendIt=totSendIt+1,
-globalE_Sent=E_sent</label>
+globalE_Sent=E_sent,
+sending=true</label>
 			<nail x="85" y="-85"/>
 		</transition>
 	</template>
 	<template>
 		<name>WD</name>
-		<parameter>const id_wd id, int EWD, int distance</parameter>
+		<parameter>const id_wd id, int distance, int EWD</parameter>
 		<declaration>int Epack=1;  //energy needed to send data from WD to Hap the data, depends from the type of WD and from the length of the data packet.
-// for the experimenetation we fix the data packet length for 22  bits. 
-// Epack is between  50 and 150 joules/bit thereforre we can experiment with different WD as if their Epack varies in this interval. https://ieeexplore.ieee.org/stamp/stamp.jsp?arnumber=926982&amp;casa_token=CY91gfh4z3QAAAAA:LwHXMRRpp1FtJKmkkgocV5xEL4IQnJpWJReicFjICJNgINxauj1WHDSbmmReYVPAjwCt8KnMutFO0bs
 //int nbbit=22; // represents the number of bits for a message. Article : Create Your Own Data and Energy Integrated Communication Network: A Brief Tutorial and a  Prototype System
 int decoding_percentage= 120;//0.3  I put as int for the properties and it should be equal to 0.3 of the E_sent  for example; Rq badletha - ama heya * percentage normalmtn
-//double EWD=0; // represnts the capacity of super capacitator : when sending a packet EWD=EWD-(nbbit*Epack)
 int Energy_Harvested; //The percentage of energy to harvest if you're the requester.
 
 
-bool W2H_Request=false;  
+bool W2H_Request=false;   
 int capacity=100; 
 int sensing_value=1; // energy needed so that the WD can harvest or accept energy. look for value in Watt and not joule.
-int Threshold_for_sending= 2; // represnts the threshhold for sending since sending data to hap also consumes energy for data encoding.
+int Threshold_for_sending= 1; // represnts the threshhold for sending since sending data to hap also consumes energy for data encoding.
 //int[0,1000] WD_energy_lost =0; 
 
 
@@ -104,8 +104,6 @@ const double SPEED_OF_LIGHT = 299792458;
 import "C:/Users/ilyes/OneDrive/Bureau/Ilyes REZGUI/My_Research/DEIN Network Formal Verification/Models/External_c++/libexternal.so" {
     int castToInt(double n);
 };
-
-
 // this function calulates lambda value represnting the wavelength
 double calculateWavelength(double frequency) {
     return SPEED_OF_LIGHT / frequency;
@@ -224,9 +222,9 @@ W2H_Request=false</label>
 			<label kind="assignment" x="-17" y="59">W2H_Request=true</label>
 		</transition>
 	</template>
-	<system>WD0=WD(0,50,2);
-WD1=WD(1,50,4);
-WD2=WD(2,50,6);
+	<system>WD0=WD(0,30,0);
+WD1=WD(1,70,2);
+WD2=WD(2,80,4);
 system WD0,WD1,WD2,HAP;</system>
 	<queries>
 		<query>
@@ -235,7 +233,7 @@ system WD0,WD1,WD2,HAP;</system>
 		</query>
 		<query>
 			<formula>E&lt;&gt; WD0.SignalReception</formula>
-			<comment>The SignalReception state can be reached eventually by WD0.</comment>
+			<comment>There exists a path where WD0.SignalReception occurs.</comment>
 		</query>
 		<query>
 			<formula>E&lt;&gt; HAP.SignalTransmission</formula>
@@ -280,45 +278,26 @@ system WD0,WD1,WD2,HAP;</system>
 			</result>
 		</query>
 		<query>
-			<formula>simulate[&lt;=3600]{WD0.EWD}</formula>
-			<comment/>
-		</query>
-		<query>
-			<formula>A[] WD0.SignalReception imply (not WD2.SignalReception) and (not WD1.SignalReception)</formula>
-			<comment/>
-		</query>
-		<query>
-			<formula>HAP.SignalTransmission --&gt; WD2.SignalReception or WD1.SignalReception or WD0.SignalReception
-</formula>
-			<comment>When a HAP is about transmitting a Signal, one of the WDs should eventually be recieving it.</comment>
-		</query>
-		<query>
-			<formula>E&lt;&gt; not WD2.DataTransmission and (WD0.SignalReception or WD1.SignalReception)</formula>
-			<comment>At some point in the future, WD2 is not in the state of DataTransmission, and at the same time, WD0 is in the state of SignalReception or WD1 is in the state of SignalReception.</comment>
-			<result outcome="success" type="quality" timestamp="2024-06-25 14:25:51 +0100">
-			</result>
-		</query>
-		<query>
-			<formula>E&lt;&gt; not WD0.DataTransmission and (WD1.SignalReception or WD2.SignalReception)</formula>
-			<comment/>
-			<result outcome="success" type="quality" timestamp="2024-04-29 22:08:04 +0100">
-			</result>
-		</query>
-		<query>
-			<formula>E&lt;&gt; not WD1.DataTransmission and (WD0.SignalReception or WD2.SignalReception)</formula>
-			<comment/>
-			<result outcome="success" type="quality" timestamp="2024-06-23 21:15:57 +0100">
-			</result>
+			<formula/>
+			<comment>****************************************************************************************************</comment>
 		</query>
 		<query>
 			<formula>E&lt;&gt; (WD0.capacity == WD0.EWD)</formula>
 			<comment>The WD will eventually be full charged.</comment>
-			<result outcome="success" type="quality" timestamp="2024-06-25 14:26:03 +0100">
+			<result outcome="success" type="quality" timestamp="2024-06-30 18:25:47 +0100">
 			</result>
 		</query>
 		<query>
-			<formula>E&lt;&gt; WD0.DataTransmission &lt;= 100 or WD1.DataTransmission &lt;= 100 or WD2.DataTransmission &lt;= 100</formula>
-			<comment>Ensure that data sent from each WD to the HAP is acknowledged within 100 ms max</comment>
+			<formula>A[](WD0.EWD&lt; WD0.Threshold_for_sending)imply WD0.EWD &lt; WD0.capacity</formula>
+			<comment/>
+		</query>
+		<query>
+			<formula>A[] WD0.DataTransmission or WD1.DataTransmission imply HAP.DataReception</formula>
+			<comment/>
+		</query>
+		<query>
+			<formula>A[] (HAP.SignalTransmission and HAP.sending==true) imply (WD0.SignalReception) or (WD1.SignalReception) </formula>
+			<comment/>
 		</query>
 		<query>
 			<formula/>
