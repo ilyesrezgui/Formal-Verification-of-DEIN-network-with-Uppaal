@@ -2,7 +2,7 @@
 <!DOCTYPE nta PUBLIC '-//Uppaal Team//DTD Flat System 1.6//EN' 'http://www.it.uu.se/research/group/darts/uppaal/flat-1_6.dtd'>
 <nta>
 	<declaration>// the enrgy of the signal transmitted/recieved
-const int N=3;
+const int N=6;
 
 typedef int[0,N-1] id_wd;
 
@@ -11,10 +11,10 @@ int nbBit = 4;
 
 broadcast chan HAP2WD;
 
-chan Send_Data[N], Data_Sent, WD2HAP_REQ[N];
+broadcast chan Send_Data[N], WD2HAP_REQ[N];
+bool channel_state=true;
 
-
-int globalE_Sent;</declaration>
+int globalE_Sent; </declaration>
 	<template>
 		<name x="5" y="5">HAP</name>
 		<declaration>
@@ -24,9 +24,9 @@ int totSendIt;
 id_wd id_sender;
 id_wd id_sending_wd;
 int E_sent =400;
-int Nb_data_sent[N]={0,0,0};
+int Nb_data_sent[N]={0,0,0,0,0,0};
 clock HAP_return; // time needed to return to the idel state after data reception
-int period_for_recieving= 10;
+int period_for_recieving= 1;
 bool sending=false;
  
 void incrementAtId(int&amp; Nb_data_sent[N], int id) {
@@ -73,9 +73,9 @@ HAP_return=0</label>
 		<transition id="id6">
 			<source ref="id0"/>
 			<target ref="id1"/>
-			<label kind="select" x="161" y="-178">id:id_wd</label>
-			<label kind="synchronisation" x="161" y="-161">WD2HAP_REQ[id]?</label>
-			<label kind="assignment" x="161" y="-144">id_sender=id,
+			<label kind="select" x="178" y="-178">id:id_wd</label>
+			<label kind="synchronisation" x="178" y="-161">WD2HAP_REQ[id]?</label>
+			<label kind="assignment" x="178" y="-144">id_sender=id,
 totSendIt=totSendIt+1,
 globalE_Sent=E_sent,
 sending=true</label>
@@ -174,7 +174,7 @@ return castToInt(res);
 			<name x="306" y="34">SignalReception</name>
 		</location>
 		<location id="id9" x="-552" y="-136">
-			<name x="-603" y="-170">DataTransmission</name>
+			<name x="-620" y="-178">DataTransmission</name>
 			<committed/>
 		</location>
 		<init ref="id7"/>
@@ -195,9 +195,9 @@ EWD&gt;=Threshold_for_sending</label>
 		<transition id="id12">
 			<source ref="id7"/>
 			<target ref="id7"/>
-			<label kind="guard" x="-382" y="144">EWD&gt;=sensing_value</label>
-			<label kind="synchronisation" x="-382" y="161">HAP2WD?</label>
-			<label kind="assignment" x="-382" y="178">Energy_Harvested=globalE_Sent,
+			<label kind="guard" x="-382" y="153">EWD&gt;=sensing_value</label>
+			<label kind="synchronisation" x="-382" y="170">HAP2WD?</label>
+			<label kind="assignment" x="-382" y="187">Energy_Harvested=globalE_Sent,
 EWD=discrete_verif_capacity(Energy_Harvested,EWD)</label>
 			<nail x="-272" y="85"/>
 			<nail x="-212" y="170"/>
@@ -207,26 +207,33 @@ EWD=discrete_verif_capacity(Energy_Harvested,EWD)</label>
 		<transition id="id13">
 			<source ref="id8"/>
 			<target ref="id7"/>
-			<label kind="guard" x="-93" y="-255">EWD&gt;=sensing_value</label>
+			<label kind="guard" x="-93" y="-272">EWD&gt;=sensing_value</label>
 			<label kind="synchronisation" x="-93" y="-178">HAP2WD?</label>
-			<label kind="assignment" x="-93" y="-238">EWD=discrete_verif_capacity(Energy_Harvested,EWD),
+			<label kind="assignment" x="-93" y="-255">EWD=discrete_verif_capacity(Energy_Harvested,EWD),
 Energy_Harvested=globalE_Sent- castToInt(globalE_Sent-decoding_percentage),
-W2H_Request=false</label>
+W2H_Request=false,
+channel_state=true</label>
 			<nail x="34" y="-119"/>
 			<nail x="-170" y="16"/>
 		</transition>
 		<transition id="id14">
 			<source ref="id7"/>
 			<target ref="id8"/>
+			<label kind="guard" x="-17" y="17">channel_state==true</label>
 			<label kind="synchronisation" x="-17" y="42">WD2HAP_REQ[id]!</label>
-			<label kind="assignment" x="-17" y="59">W2H_Request=true</label>
+			<label kind="assignment" x="-17" y="59">W2H_Request=true,
+channel_state=false</label>
 		</transition>
 	</template>
-	<system>WD0=WD(0,30,0);
+	<system>WD0=WD(0,70,0);
 WD1=WD(1,70,2);
-WD2=WD(2,80,4);
+WD2=WD(2,70,4);
+WD3=WD(3,70,6);
+WD4=WD(4,70,8);
+WD5=WD(5,70,10);
 system WD0,WD1,WD2,HAP;</system>
 	<queries>
+		<option key="--hashtable-size" value="31"/>
 		<query>
 			<formula/>
 			<comment>===== Reachability:</comment>
@@ -282,26 +289,44 @@ system WD0,WD1,WD2,HAP;</system>
 			<comment>****************************************************************************************************</comment>
 		</query>
 		<query>
-			<formula>E&lt;&gt; (WD0.capacity == WD0.EWD)</formula>
+			<formula>A[] (WD0.EWD &lt;= WD0.capacity)</formula>
 			<comment>The WD will eventually be full charged.</comment>
-			<result outcome="success" type="quality" timestamp="2024-06-30 18:25:47 +0100">
+			<result outcome="success" type="quality" timestamp="2024-07-04 21:15:31 +0100">
 			</result>
 		</query>
 		<query>
-			<formula>A[](WD0.EWD&lt; WD0.Threshold_for_sending)imply WD0.EWD &lt; WD0.capacity</formula>
+			<formula>A[](WD0.EWD&lt; WD0.sensing_value)imply WD0.EWD &lt; WD0.capacity</formula>
+			<comment/>
+			<result outcome="success" type="quality" timestamp="2024-07-04 21:06:43 +0100">
+			</result>
+		</query>
+		<query>
+			<formula>A[] WD0.DataTransmission  imply HAP.DataReception</formula>
+			<comment/>
+			<result outcome="success" type="quality" timestamp="2024-07-04 22:16:09 +0100">
+				<option key="--hashtable-size" value="31"/>
+			</result>
+		</query>
+		<query>
+			<formula>A[] (HAP.SignalTransmission and HAP.sending==true) imply (WD0.SignalReception)</formula>
+			<comment/>
+			<option key="--hashtable-size" value="31"/>
+			<result outcome="success" type="quality" timestamp="2024-07-04 22:16:15 +0100">
+				<option key="--hashtable-size" value="31"/>
+			</result>
+		</query>
+		<query>
+			<formula>Pr[&lt;=86400](&lt;&gt; (WD0.EWD &lt;= WD0.capacity))
+</formula>
 			<comment/>
 		</query>
 		<query>
-			<formula>A[] WD0.DataTransmission or WD1.DataTransmission imply HAP.DataReception</formula>
+			<formula>A[] not (WD0.SignalReception and WD0.DataTransmission)
+</formula>
 			<comment/>
-		</query>
-		<query>
-			<formula>A[] (HAP.SignalTransmission and HAP.sending==true) imply (WD0.SignalReception) or (WD1.SignalReception) </formula>
-			<comment/>
-		</query>
-		<query>
-			<formula/>
-			<comment/>
+			<result outcome="success" type="quality" timestamp="2024-07-04 22:32:22 +0100">
+				<option key="--hashtable-size" value="31"/>
+			</result>
 		</query>
 	</queries>
 </nta>
