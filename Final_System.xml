@@ -316,8 +316,7 @@ system WD0,WD1,WD2,HAP;</system>
 			</result>
 		</query>
 		<query>
-			<formula>Pr[&lt;=86400](&lt;&gt; (WD0.EWD &lt;= WD0.capacity))
-</formula>
+			<formula>Pr[&lt;=86400](&lt;&gt; (WD0.EWD &lt;= WD0.capacity))</formula>
 			<comment/>
 		</query>
 		<query>
