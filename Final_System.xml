@@ -42,6 +42,7 @@ void incrementAtId(int&amp; Nb_data_sent[N], int id) {
 		</location>
 		<location id="id1" x="306" y="-17">
 			<name x="331" y="-25">SignalTransmission</name>
+			<label kind="exponentialrate" x="306" y="0">1</label>
 		</location>
 		<location id="id2" x="-314" y="-255">
 			<name x="-382" y="-297">DataReception</name>
@@ -95,8 +96,7 @@ bool W2H_Request=false;
 int capacity=100; 
 int sensing_value=1; // energy needed so that the WD can harvest or accept energy. look for value in Watt and not joule.
 int Threshold_for_sending= 1; // represnts the threshhold for sending since sending data to hap also consumes energy for data encoding.
-//int[0,1000] WD_energy_lost =0; 
-
+int[0,1000] WD_energy_lost =0; 
 
 const double M_PI       = 3.141592653589793115997963468544185161590576171875; 
 const double SPEED_OF_LIGHT = 299792458;
@@ -104,6 +104,7 @@ const double SPEED_OF_LIGHT = 299792458;
 import "C:/Users/ilyes/OneDrive/Bureau/Ilyes REZGUI/My_Research/DEIN Network Formal Verification/Models/External_c++/libexternal.so" {
     int castToInt(double n);
 };
+
 // this function calulates lambda value represnting the wavelength
 double calculateWavelength(double frequency) {
     return SPEED_OF_LIGHT / frequency;
@@ -154,7 +155,7 @@ double k=x;
 k=calculateReceivedPower(x,3.8,3.8,915e3,distance);
 if (k+y&gt; capacity){
         //energy_lost=castToInt(energy_lost+(k+y-capacity));
-        //WD_energy_lost=WD_energy_lost+castToInt(k+y-capacity);
+        WD_energy_lost=WD_energy_lost+castToInt(k+y-capacity);
         return capacity; 
     }
     else {
@@ -166,12 +167,16 @@ double res;
 res=verif_capacity(x,y);
 return castToInt(res);
 }
+
+
 </declaration>
 		<location id="id7" x="-204" y="34">
 			<name x="-221" y="51">Idle</name>
+			<label kind="exponentialrate" x="-212" y="68">1</label>
 		</location>
 		<location id="id8" x="289" y="42">
 			<name x="306" y="34">SignalReception</name>
+			<label kind="exponentialrate" x="306" y="51">1</label>
 		</location>
 		<location id="id9" x="-552" y="-136">
 			<name x="-620" y="-178">DataTransmission</name>
@@ -182,7 +187,7 @@ return castToInt(res);
 			<source ref="id9"/>
 			<target ref="id7"/>
 			<nail x="-484" y="-34"/>
-			<nail x="-467" y="-8"/>
+			<nail x="-467" y="-17"/>
 		</transition>
 		<transition id="id11">
 			<source ref="id7"/>
@@ -225,13 +230,13 @@ channel_state=true</label>
 channel_state=false</label>
 		</transition>
 	</template>
-	<system>WD0=WD(0,70,0);
-WD1=WD(1,70,2);
-WD2=WD(2,70,4);
-WD3=WD(3,70,6);
-WD4=WD(4,70,8);
-WD5=WD(5,70,10);
-system WD0,WD1,WD2,HAP;</system>
+	<system>WD0=WD(0,70,2);
+WD1=WD(1,70,10);
+WD2=WD(2,70,30);
+WD3=WD(3,70,60);
+WD4=WD(4,70,90);
+system WD0,WD1,WD2,WD3,WD4,HAP;
+</system>
 	<queries>
 		<option key="--hashtable-size" value="31"/>
 		<query>
@@ -291,19 +296,21 @@ system WD0,WD1,WD2,HAP;</system>
 		<query>
 			<formula>A[] (WD0.EWD &lt;= WD0.capacity)</formula>
 			<comment>The WD will eventually be full charged.</comment>
-			<result outcome="success" type="quality" timestamp="2024-07-04 21:15:31 +0100">
+			<result outcome="success" type="quality" timestamp="2024-07-13 20:19:43 +0100">
+				<option key="--hashtable-size" value="31"/>
 			</result>
 		</query>
 		<query>
 			<formula>A[](WD0.EWD&lt; WD0.sensing_value)imply WD0.EWD &lt; WD0.capacity</formula>
 			<comment/>
-			<result outcome="success" type="quality" timestamp="2024-07-04 21:06:43 +0100">
+			<result outcome="success" type="quality" timestamp="2024-07-13 19:39:06 +0100">
+				<option key="--hashtable-size" value="31"/>
 			</result>
 		</query>
 		<query>
 			<formula>A[] WD0.DataTransmission  imply HAP.DataReception</formula>
 			<comment/>
-			<result outcome="success" type="quality" timestamp="2024-07-04 22:16:09 +0100">
+			<result outcome="success" type="quality" timestamp="2024-07-13 20:21:00 +0100">
 				<option key="--hashtable-size" value="31"/>
 			</result>
 		</query>
@@ -316,16 +323,373 @@ system WD0,WD1,WD2,HAP;</system>
 			</result>
 		</query>
 		<query>
-			<formula>Pr[&lt;=86400](&lt;&gt; (WD0.EWD &lt;= WD0.capacity))</formula>
-			<comment/>
-		</query>
-		<query>
 			<formula>A[] not (WD0.SignalReception and WD0.DataTransmission)
 </formula>
 			<comment/>
-			<result outcome="success" type="quality" timestamp="2024-07-04 22:32:22 +0100">
+			<result outcome="success" type="quality" timestamp="2024-07-13 19:53:04 +0100">
 				<option key="--hashtable-size" value="31"/>
 			</result>
+		</query>
+		<query>
+			<formula>Pr[&lt;=86400] (&lt;&gt; WD0.EWD == WD0.capacity)
+</formula>
+			<comment/>
+			<result outcome="success" type="quantity" value="0.67592 ± 0.0484987 (95% CI)" timestamp="2024-07-13 23:19:08 +0100">
+				<option key="--hashtable-size" value="31"/>
+				<details>0.67592 ± 0.0484987 (95% CI)</details>
+				<plot title="Probability Density Distribution" xaxis="run duration in time" yaxis="probability density">
+					<series title="density" type="b(1.482618)" color="0x0000ff" encoding="csv">0.6763320916027032,0.025180677623316466
+2.15895038694055,0.0737434130397125
+3.6415686822783973,0.10431995015373965
+5.124186977616245,0.09172961134208142
+6.606805272954092,0.059354454397817384
+8.089423568291938,0.05215997507686983
+9.572041863629785,0.021583437962842685
+11.054660158967632,0.008993099151184453
+12.53727845430548,0.005395859490710671
+14.019896749643326,0.007194479320947562
+15.502515044981173,0.005395859490710671
+16.98513334031902,0.0
+18.467751635656867,0.0
+19.950369930994714,0.0
+21.43298822633256,0.0
+22.91560652167041,0.0017986198302368905
+					</series>
+					<series title="average" type="pl" color="0x00dd00" encoding="csv">6.036791597407722,0.0
+6.036791597407722,0.10431995015373967
+					</series>
+					<comment>Parameters: α=0.05, ε=0.05, bucket width=1.4826, bucket count=16
+Runs: 375 in total, 254 (67.733%) displayed, 121 (32.267%) remaining
+Span of displayed sample: [0.6763, 24.4]
+Mean estimate of displayed sample: 6.037 ± 0.3975 (95% CI)</comment>
+				</plot>
+				<plot title="Probability Density Confidence Intervals" xaxis="run duration in time" yaxis="probability density">
+					<series title="upper limit" type="b(1.482618)" color="0xa0a0ff" encoding="csv">0.6763320916027032,0.06184617681603132
+2.15895038694055,0.1453908583379355
+3.6415686822783973,0.19530664204283815
+5.124186977616245,0.17491068385862799
+6.606805272954092,0.12136471494810627
+8.089423568291938,0.10917642902405406
+9.572041863629785,0.05522999124849279
+11.054660158967632,0.030839706746825728
+12.53727845430548,0.02320021625573887
+14.019896749643326,0.027084335722155215
+15.502515044981173,0.02320021625573887
+16.98513334031902,0.009788786736268753
+18.467751635656867,0.009788786736268753
+19.950369930994714,0.009788786736268753
+21.43298822633256,0.009788786736268753
+22.91560652167041,0.014767465790647642
+					</series>
+					<series title="lower limit" type="b(1.482618)" color="0x0000ff" encoding="csv">0.6763320916027032,0.02055812027973315
+2.15895038694055,0.07961034757148955
+3.6415686822783973,0.11958766531079465
+5.124186977616245,0.10296495054293368
+6.606805272954092,0.0613494746810756
+8.089423568291938,0.05240084517305642
+9.572041863629785,0.016642035409851732
+11.054660158967632,0.004343091560316999
+12.53727845430548,0.0016528406408789793
+14.019896749643326,0.002913742293347133
+15.502515044981173,0.0016528406408789793
+16.98513334031902,0.0
+18.467751635656867,0.0
+19.950369930994714,0.0
+21.43298822633256,0.0
+22.91560652167041,6.751187559552486E-5
+					</series>
+					<series title="average" type="pl" color="0x00dd00" encoding="csv">6.036791597407722,0.0
+6.036791597407722,0.13173089975821003
+					</series>
+					<comment>Parameters: α=0.05, ε=0.05, bucket width=1.4826, bucket count=16
+Runs: 375 in total, 254 (67.733%) displayed, 121 (32.267%) remaining
+Span of displayed sample: [0.6763, 24.4]
+Mean estimate of displayed sample: 6.037 ± 0.3975 (95% CI)</comment>
+				</plot>
+				<plot title="Probability Distribution" xaxis="run duration in time" yaxis="probability">
+					<series title="probability" type="b(1.482618)" color="0x0000ff" encoding="csv">0.6763320916027032,0.037333333333333336
+2.15895038694055,0.10933333333333334
+3.6415686822783973,0.15466666666666667
+5.124186977616245,0.136
+6.606805272954092,0.088
+8.089423568291938,0.07733333333333334
+9.572041863629785,0.032
+11.054660158967632,0.013333333333333334
+12.53727845430548,0.008
+14.019896749643326,0.010666666666666666
+15.502515044981173,0.008
+16.98513334031902,0.0
+18.467751635656867,0.0
+19.950369930994714,0.0
+21.43298822633256,0.0
+22.91560652167041,0.0026666666666666666
+					</series>
+					<series title="average" type="pl" color="0x00dd00" encoding="csv">6.036791597407722,0.0
+6.036791597407722,0.15466666666666667
+					</series>
+					<comment>Parameters: α=0.05, ε=0.05, bucket width=1.4826, bucket count=16
+Runs: 375 in total, 254 (67.733%) displayed, 121 (32.267%) remaining
+Span of displayed sample: [0.6763, 24.4]
+Mean estimate of displayed sample: 6.037 ± 0.3975 (95% CI)</comment>
+				</plot>
+				<plot title="Probability Confidence Intervals" xaxis="run duration in time" yaxis="probability">
+					<series title="upper limit" type="b(1.482618)" color="0xa0a0ff" encoding="csv">0.6763320916027032,0.06184617681603132
+2.15895038694055,0.1453908583379355
+3.6415686822783973,0.19530664204283815
+5.124186977616245,0.17491068385862799
+6.606805272954092,0.12136471494810627
+8.089423568291938,0.10917642902405406
+9.572041863629785,0.05522999124849279
+11.054660158967632,0.030839706746825728
+12.53727845430548,0.02320021625573887
+14.019896749643326,0.027084335722155215
+15.502515044981173,0.02320021625573887
+16.98513334031902,0.009788786736268753
+18.467751635656867,0.009788786736268753
+19.950369930994714,0.009788786736268753
+21.43298822633256,0.009788786736268753
+22.91560652167041,0.014767465790647642
+					</series>
+					<series title="lower limit" type="b(1.482618)" color="0x0000ff" encoding="csv">0.6763320916027032,0.02055812027973315
+2.15895038694055,0.07961034757148955
+3.6415686822783973,0.11958766531079465
+5.124186977616245,0.10296495054293368
+6.606805272954092,0.0613494746810756
+8.089423568291938,0.05240084517305642
+9.572041863629785,0.016642035409851732
+11.054660158967632,0.004343091560316999
+12.53727845430548,0.0016528406408789793
+14.019896749643326,0.002913742293347133
+15.502515044981173,0.0016528406408789793
+16.98513334031902,0.0
+18.467751635656867,0.0
+19.950369930994714,0.0
+21.43298822633256,0.0
+22.91560652167041,6.751187559552486E-5
+					</series>
+					<series title="average" type="pl" color="0x00dd00" encoding="csv">6.036791597407722,0.0
+6.036791597407722,0.19530664204283815
+					</series>
+					<comment>Parameters: α=0.05, ε=0.05, bucket width=1.4826, bucket count=16
+Runs: 375 in total, 254 (67.733%) displayed, 121 (32.267%) remaining
+Span of displayed sample: [0.6763, 24.4]
+Mean estimate of displayed sample: 6.037 ± 0.3975 (95% CI)</comment>
+				</plot>
+				<plot title="Cumulative Probability Distribution" xaxis="run duration in time" yaxis="probability">
+					<series title="cumulative" type="l" color="0x000000" encoding="csv">0.6763320916027032,0.0
+2.15895038694055,0.037333333333333336
+3.6415686822783973,0.14666666666666667
+5.124186977616245,0.30133333333333334
+6.606805272954092,0.43733333333333335
+8.089423568291938,0.5253333333333333
+9.572041863629785,0.6026666666666667
+11.054660158967632,0.6346666666666667
+12.53727845430548,0.648
+14.019896749643326,0.656
+15.502515044981173,0.6666666666666666
+16.98513334031902,0.6746666666666666
+18.467751635656867,0.6746666666666666
+19.950369930994714,0.6746666666666666
+21.43298822633256,0.6746666666666666
+22.91560652167041,0.6746666666666666
+					</series>
+					<series title="average" type="pl" color="0x00dd00" encoding="csv">6.036791597407722,0.0
+6.036791597407722,0.6773333333333333
+					</series>
+					<comment>Parameters: α=0.05, ε=0.05, bucket width=1.4826, bucket count=16
+Runs: 375 in total, 254 (67.733%) displayed, 121 (32.267%) remaining
+Span of displayed sample: [0.6763, 24.4]
+Mean estimate of displayed sample: 6.037 ± 0.3975 (95% CI)</comment>
+				</plot>
+				<plot title="Cumulative Probability Confidence Intervals" xaxis="run duration in time" yaxis="probability">
+					<series title="upper limit" type="k" color="0x0000dd" encoding="csv">0.6763320916027032,0.009788786736268753
+2.15895038694055,0.06184617681603132
+3.6415686822783973,0.18658955882252093
+5.124186977616245,0.35054631007485926
+6.606805272954092,0.4892016133444123
+8.089423568291938,0.5768334218825458
+9.572041863629785,0.652544623394988
+11.054660158967632,0.683502984785039
+12.53727845430548,0.6963348081811841
+14.019896749643326,0.7040142386326503
+15.502515044981173,0.7142300406376899
+16.98513334031902,0.7218739700393282
+18.467751635656867,0.7218739700393282
+19.950369930994714,0.7218739700393282
+21.43298822633256,0.7218739700393282
+22.91560652167041,0.7218739700393282
+					</series>
+					<series title="lower limit" type="k" color="0xdd0000" encoding="csv">0.6763320916027032,0.0
+2.15895038694055,0.02055812027973315
+3.6415686822783973,0.11243907921780423
+5.124186977616245,0.2552896106572712
+6.606805272954092,0.3864620974027755
+8.089423568291938,0.4734302719703131
+9.572041863629785,0.5511545187290664
+11.054660158967632,0.5836856405182513
+12.53727845430548,0.5973074814695891
+14.019896749643326,0.6055001526951137
+15.502515044981173,0.6164470272742831
+16.98513334031902,0.6246750025375128
+18.467751635656867,0.6246750025375128
+19.950369930994714,0.6246750025375128
+21.43298822633256,0.6246750025375128
+22.91560652167041,0.6246750025375128
+					</series>
+					<series title="cumulative" type="l" color="0x000000" encoding="csv">0.6763320916027032,0.0
+2.15895038694055,0.037333333333333336
+3.6415686822783973,0.14666666666666667
+5.124186977616245,0.30133333333333334
+6.606805272954092,0.43733333333333335
+8.089423568291938,0.5253333333333333
+9.572041863629785,0.6026666666666667
+11.054660158967632,0.6346666666666667
+12.53727845430548,0.648
+14.019896749643326,0.656
+15.502515044981173,0.6666666666666666
+16.98513334031902,0.6746666666666666
+18.467751635656867,0.6746666666666666
+19.950369930994714,0.6746666666666666
+21.43298822633256,0.6746666666666666
+22.91560652167041,0.6746666666666666
+					</series>
+					<series title="average" type="pl" color="0x00dd00" encoding="csv">6.036791597407722,0.0
+6.036791597407722,0.6773333333333333
+					</series>
+					<comment>Parameters: α=0.05, ε=0.05, bucket width=1.4826, bucket count=16
+Runs: 375 in total, 254 (67.733%) displayed, 121 (32.267%) remaining
+Span of displayed sample: [0.6763, 24.4]
+Mean estimate of displayed sample: 6.037 ± 0.3975 (95% CI)</comment>
+				</plot>
+				<plot title="Frequency Histogram" xaxis="run duration in time" yaxis="count">
+					<series title="count" type="b(1.482618)" color="0x0000ff" encoding="csv">0.6763320916027032,14.0
+2.15895038694055,41.0
+3.6415686822783973,58.0
+5.124186977616245,51.0
+6.606805272954092,33.0
+8.089423568291938,29.0
+9.572041863629785,12.0
+11.054660158967632,5.0
+12.53727845430548,3.0
+14.019896749643326,4.0
+15.502515044981173,3.0
+16.98513334031902,0.0
+18.467751635656867,0.0
+19.950369930994714,0.0
+21.43298822633256,0.0
+22.91560652167041,1.0
+					</series>
+					<series title="average" type="pl" color="0x00dd00" encoding="csv">6.036791597407722,0.0
+6.036791597407722,58.0
+					</series>
+					<comment>Parameters: α=0.05, ε=0.05, bucket width=1.4826, bucket count=16
+Runs: 375 in total, 254 (67.733%) displayed, 121 (32.267%) remaining
+Span of displayed sample: [0.6763, 24.4]
+Mean estimate of displayed sample: 6.037 ± 0.3975 (95% CI)</comment>
+				</plot>
+			</result>
+		</query>
+		<query>
+			<formula>simulate [&lt;=10] {WD0.EWD}</formula>
+			<comment/>
+			<result outcome="success" type="quality" timestamp="2024-07-13 23:23:16 +0100">
+				<option key="--hashtable-size" value="31"/>
+				<plot title="Simulations (1)" xaxis="time" yaxis="value">
+					<series title="WD0.EWD" type="l" color="0xff0000" encoding="csv">0.0,2.0
+5.834094901319444,2.0
+5.834094901319444,100.0
+8.592420771012238,100.0
+8.592420771012238,96.0
+10.0,96.0
+					</series>
+					<comment/>
+				</plot>
+			</result>
+		</query>
+		<query>
+			<formula>simulate [&lt;=604800] {WD0.WD_energy_lost}</formula>
+			<comment/>
+			<result outcome="success" type="quality" timestamp="2024-07-14 00:21:52 +0100">
+				<option key="--hashtable-size" value="31"/>
+				<plot title="Simulations (1)" xaxis="time" yaxis="value">
+					<series title="WD0.WD_energy_lost" type="l" color="0xff0000" encoding="csv">0.0,0.0
+3.275501900012079,0.0
+3.275501900012079,13.0
+604800.0,13.0
+					</series>
+					<comment/>
+				</plot>
+			</result>
+		</query>
+		<query>
+			<formula>simulate [&lt;=604800] {WD1.WD_energy_lost}</formula>
+			<comment/>
+			<result outcome="success" type="quality" timestamp="2024-07-14 00:22:03 +0100">
+				<option key="--hashtable-size" value="31"/>
+				<plot title="Simulations (1)" xaxis="time" yaxis="value">
+					<series title="WD1.WD_energy_lost" type="l" color="0xff0000" encoding="csv">0.0,0.0
+1.355368342615772,0.0
+3.0012730767757505,13.0
+3.0012730767757505,124.0
+604800.0,124.0
+					</series>
+					<comment/>
+				</plot>
+			</result>
+		</query>
+		<query>
+			<formula>simulate [&lt;=604800] {WD2.WD_energy_lost}</formula>
+			<comment/>
+			<result outcome="success" type="quality" timestamp="2024-07-14 00:22:17 +0100">
+				<option key="--hashtable-size" value="31"/>
+				<plot title="Simulations (1)" xaxis="time" yaxis="value">
+					<series title="WD2.WD_energy_lost" type="l" color="0xff0000" encoding="csv">0.0,0.0
+1.0354549697833315,0.0
+1.0354549697833315,33.0
+604800.0,33.0
+					</series>
+					<comment/>
+				</plot>
+			</result>
+		</query>
+		<query>
+			<formula>simulate [&lt;=604800] {WD3.WD_energy_lost}</formula>
+			<comment/>
+			<result outcome="success" type="quality" timestamp="2024-07-14 00:22:28 +0100">
+				<option key="--hashtable-size" value="31"/>
+				<plot title="Simulations (1)" xaxis="time" yaxis="value">
+					<series title="WD3.WD_energy_lost" type="l" color="0xff0000" encoding="csv">0.0,0.0
+0.35624402650799203,0.0
+1.519082336307704,71.0
+1.519082336307704,182.0
+604800.0,182.0
+					</series>
+					<comment/>
+				</plot>
+			</result>
+		</query>
+		<query>
+			<formula>simulate [&lt;=604800] {WD4.WD_energy_lost}</formula>
+			<comment/>
+			<result outcome="success" type="quality" timestamp="2024-07-14 00:22:38 +0100">
+				<option key="--hashtable-size" value="31"/>
+				<plot title="Simulations (1)" xaxis="time" yaxis="value">
+					<series title="WD4.WD_energy_lost" type="l" color="0xff0000" encoding="csv">0.0,0.0
+0.433544435426363,0.0
+5.515220549613285,101.0
+6.273111567608256,212.0
+7.00541386733475,245.0
+9.318633880071435,356.0
+9.318633880071435,467.0
+604800.0,467.0
+					</series>
+					<comment/>
+				</plot>
+			</result>
+		</query>
+		<query>
+			<formula>Pr[&lt;=86400] (&lt;&gt; (WD0.DataTransmission or WD1.DataTransmission or WD2.DataTransmission or WD3.DataTransmission or WD4.DataTransmission) &amp;&amp; HAP.DataReception)</formula>
+			<comment/>
 		</query>
 	</queries>
 </nta>
