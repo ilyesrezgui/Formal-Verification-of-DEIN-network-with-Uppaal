@@ -9,33 +9,27 @@ typedef int[0,N-1] id_wd;
 int nbBit = 2; 
 //int[0,1000] energy_lost=0;
 
-broadcast chan HAP2WD;
-chan done;
+broadcast chan HAP2WD,done;
+//chan 
 broadcast chan Send_Data[N], WD2HAP_REQ[N];
 bool channel_state=true;
-double globalE_Sent; </declaration>
+int globalE_Sent; </declaration>
 	<template>
 		<name x="5" y="5">HAP</name>
 		<declaration>
-
-
-int totSendIt;
 id_wd id_sender;
 id_wd id_sending_wd;
-double E_sent =1000000;
+int E_sent =10; //// is the energy emission and it should be in microwattt, it represnts X in the WD declaration
 int Nb_data_sent[N]={0,0,0,0,0,0};
 clock HAP_return; // time needed to return to the idel state after data reception
-int period_for_recieving= 1;
-int period_for_sending= 1;
+int period_for_recieving= 1; //  the time needed so the hap to receive data
+int period_for_sending= 1; // the time needed for the hap to send the data,we consider these clocks so that we reflect on the fact that these operations take time.
 bool sending=false;
 clock HAP_sending; 
 
 void incrementAtId(int&amp; Nb_data_sent[N], int id) {
         Nb_data_sent[id]=Nb_data_sent[id]+1; 
     }
-
-
- 
 
 </declaration>
 		<location id="id0" x="-93" y="-25">
@@ -46,17 +40,16 @@ void incrementAtId(int&amp; Nb_data_sent[N], int id) {
 			<label kind="invariant" x="331" y="-8">HAP_sending&lt;=period_for_sending</label>
 			<label kind="exponentialrate" x="306" y="0">1</label>
 		</location>
-		<location id="id2" x="-340" y="-221">
-			<name x="-408" y="-263">DataReception</name>
-			<label kind="invariant" x="-467" y="-281">HAP_return&lt;=period_for_recieving</label>
-			<label kind="exponentialrate" x="-365" y="-229">1</label>
+		<location id="id2" x="-340" y="-229">
+			<name x="-408" y="-271">DataReception</name>
+			<label kind="invariant" x="-467" y="-289">HAP_return&lt;=period_for_recieving</label>
+			<label kind="exponentialrate" x="-365" y="-237">1</label>
 		</location>
 		<init ref="id0"/>
 		<transition id="id3">
 			<source ref="id2"/>
 			<target ref="id0"/>
-			<label kind="synchronisation" x="-416" y="-93">done!</label>
-			<label kind="assignment" x="-450" y="-76">HAP_return=0</label>
+			<label kind="assignment" x="-459" y="-127">HAP_return=0</label>
 			<nail x="-340" y="-76"/>
 			<nail x="-340" y="-25"/>
 		</transition>
@@ -79,10 +72,9 @@ HAP_sending=0</label>
 		<transition id="id6">
 			<source ref="id0"/>
 			<target ref="id1"/>
-			<label kind="select" x="178" y="-187">id:id_wd</label>
-			<label kind="synchronisation" x="178" y="-170">WD2HAP_REQ[id]?</label>
-			<label kind="assignment" x="178" y="-153">id_sender=id,
-totSendIt=totSendIt+1,
+			<label kind="select" x="187" y="-195">id:id_wd</label>
+			<label kind="synchronisation" x="187" y="-178">WD2HAP_REQ[id]?</label>
+			<label kind="assignment" x="187" y="-161">id_sender=id,
 globalE_Sent=E_sent,
 sending=true,
 HAP_sending=0</label>
@@ -91,21 +83,23 @@ HAP_sending=0</label>
 	</template>
 	<template>
 		<name>WD</name>
-		<parameter>const id_wd id,double distance, int EWD</parameter>
-		<declaration>double Epack=10;  //energy needed to send data from WD to Hap the data, depends from the type of WD and from the length of the data packet.
+		<parameter>const id_wd id,int distance, int EWD</parameter>
+		<declaration>int Epack=3; //energy needed to send data from WD to Hap. between 50 et 150 nano j 
 //int nbbit=22; // represents the number of bits for a message. Article : Create Your Own Data and Energy Integrated Communication Network: A Brief Tutorial and a  Prototype System
-int decoding_percentage= 1;//0.3  I put as int for the properties and it should be equal to 0.3 of the E_sent  for example; Rq badletha - ama heya * percentage normalmtn
-double Energy_Harvested; //The percentage of energy to harvest if you're the requester.
+int decoding_percentage= 1;// it should be chosen accoridngly to global-Esent since it represents a part of the emitted value.
+int Energy_Harvested; //The percentage of energy to harvest if you're the requester.
 
 bool W2H_Request=false;   
-double capacity=1000000000; 
-int sensing_value=300;// energy needed so that the WD can harvest or accept energy. look for value in Watt and not joule.
-int Threshold_for_sending=50; // represnts the threshhold for sending since sending data to hap also consumes energy for data encoding.
+//double capacity=1000000000; 
+int capacity=100;// to be varried from 1 to 250 W/KG and it should depend on whether it is a battery or a super capacitator, to be changed in mW or micro Watt
+int sensing_value=10; // in milliwatt/cm² to be varried accordingly
+int Threshold_for_sending=15; // represnts the threshhold for sending since sending data to hap also consumes energy for data encoding.
 int[0,1000] WD_energy_lost =0; 
-double k;
+
 
 int WD_receiving=4; 
 clock time_to_receive;
+
 
 const double M_PI       = 3.141592653589793115997963468544185161590576171875; 
 const double SPEED_OF_LIGHT = 299792458;
@@ -127,6 +121,10 @@ double calculateFSPL(double distanceMeters, double frequencyHz) {
     return fspl;
 }
 
+//  PT is the energy emitted by the HAP
+//  GT and GR are the gain of the antenna in term of dbi 
+//  frequency in HZ if the frequency for communication , in the RF interval 
+//  d is the distance 
 
 double calculateReceivedPower(double PT, double GT, double GR, double frequency_in_Hz, double d) {
     double lambda = calculateWavelength(frequency_in_Hz);
@@ -143,7 +141,7 @@ double calculateReceivedPower(double PT, double GT, double GR, double frequency_
 
 double verif_capacity(double x,int y){
 // we want to analyse energy lost with repsect to distance  
-k=calculateReceivedPower(x,3.8,3.8,915e6,distance);
+double k=calculateReceivedPower(x,3.8,3.8,915e6,distance);      // x is the energy emission and it should be in microwattt
 if (k+y&gt; capacity){
         //energy_lost=castToInt(energy_lost+(k+y-capacity));
         WD_energy_lost=WD_energy_lost+castToInt(k+y-capacity);
@@ -158,21 +156,6 @@ double res;
 res=verif_capacity(x,y);
 return castToInt(res);
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 // double calculateokumura(double distanceMeters, double frequencyHz)
 
@@ -200,16 +183,15 @@ return castToInt(res);
 		</location>
 		<location id="id8" x="289" y="42">
 			<name x="306" y="25">SignalReception</name>
-			<label kind="invariant" x="306" y="51">time_to_receive&lt;=WD_receiving</label>
+			<label kind="invariant" x="306" y="42">time_to_receive&lt;=WD_receiving</label>
 			<label kind="exponentialrate" x="289" y="59">1</label>
-			<urgent/>
+			<committed/>
 		</location>
 		<location id="id9" x="-595" y="-170">
 			<name x="-663" y="-212">DataTransmission</name>
 			<label kind="exponentialrate" x="-604" y="-153">1</label>
-			<committed/>
 		</location>
-		<init ref="id7"/>
+		<init ref="id9"/>
 		<transition id="id10">
 			<source ref="id8"/>
 			<target ref="id7"/>
@@ -225,8 +207,7 @@ return castToInt(res);
 		<transition id="id12">
 			<source ref="id9"/>
 			<target ref="id7"/>
-			<label kind="synchronisation" x="-637" y="-25">done?</label>
-			<label kind="assignment" x="-739" y="-8">EWD=castToInt(EWD-Epack*nbBit)</label>
+			<label kind="assignment" x="-748" y="-25">EWD=castToInt(EWD-Epack*nbBit)</label>
 			<nail x="-510" y="-59"/>
 			<nail x="-442" y="34"/>
 		</transition>
@@ -272,8 +253,8 @@ channel_state=false,
 time_to_receive=0</label>
 		</transition>
 	</template>
-	<system>WD0=WD(0,0.5,700);
-WD1=WD(1,0.5,600);
+	<system>WD0=WD(0,1,1);   // the distance should be varried 0.2    0.4    0.7   1    5   10   20
+WD1=WD(0,1,9);
 system WD0,WD1,HAP;
 </system>
 	<queries>
@@ -284,6 +265,8 @@ system WD0,WD1,HAP;
 		<query>
 			<formula>E&lt;&gt; WD0.SignalReception</formula>
 			<comment>There exists a path where WD0.SignalReception occurs.</comment>
+			<result outcome="success" type="quality" timestamp="2024-08-12 14:44:36 +0100">
+			</result>
 		</query>
 		<query>
 			<formula>E&lt;&gt; HAP.SignalTransmission</formula>
@@ -316,42 +299,40 @@ system WD0,WD1,HAP;
 		<query>
 			<formula>E&lt;&gt; WD0.DataTransmission</formula>
 			<comment/>
-			<result outcome="success" type="quality" timestamp="2024-06-25 14:34:51 +0100">
+			<result outcome="success" type="quality" timestamp="2024-08-12 16:11:44 +0100">
 			</result>
 		</query>
 		<query>
 			<formula>E&lt;&gt; WD1.DataTransmission</formula>
 			<comment/>
-			<result outcome="success" type="quality" timestamp="2024-06-25 14:34:57 +0100">
-			</result>
 		</query>
 		<query>
 			<formula/>
 			<comment>****************************************************************************************************</comment>
 		</query>
 		<query>
-			<formula>A[] (WD0.EWD &lt;= WD0.capacity)</formula>
+			<formula>A[] (WD0.EWD &lt;= WD0.capacity) and (WD1.EWD &lt;= WD1.capacity)</formula>
 			<comment>The WD will eventually be full charged.</comment>
+			<result outcome="success" type="quality" timestamp="2024-08-13 13:10:35 +0100">
+			</result>
 		</query>
 		<query>
 			<formula>A[](WD0.EWD&lt; WD0.sensing_value)imply WD0.EWD &lt; WD0.capacity</formula>
 			<comment/>
-			<result outcome="success" type="quality" timestamp="2024-07-13 19:39:06 +0100">
-				<option key="--hashtable-size" value="31"/>
+			<result outcome="success" type="quality" timestamp="2024-08-13 12:57:59 +0100">
 			</result>
 		</query>
 		<query>
 			<formula>A[] WD0.DataTransmission  imply HAP.DataReception</formula>
 			<comment/>
-			<result outcome="success" type="quality" timestamp="2024-07-13 20:21:00 +0100">
-				<option key="--hashtable-size" value="31"/>
+			<result outcome="success" type="quality" timestamp="2024-08-13 12:45:27 +0100">
 			</result>
 		</query>
 		<query>
-			<formula>A[] (HAP.SignalTransmission and HAP.sending==true) imply (WD0.SignalReception)</formula>
+			<formula>A[] (HAP.SignalTransmission and HAP.sending==true) imply (WD0.SignalReception or WD1.SignalReception)</formula>
 			<comment/>
 			<option key="--hashtable-size" value="31"/>
-			<result outcome="success" type="quality" timestamp="2024-07-04 22:16:15 +0100">
+			<result outcome="failure" type="quality" timestamp="2024-08-13 12:55:33 +0100">
 				<option key="--hashtable-size" value="31"/>
 			</result>
 		</query>
@@ -359,8 +340,7 @@ system WD0,WD1,HAP;
 			<formula>A[] not (WD0.SignalReception and WD0.DataTransmission)
 </formula>
 			<comment/>
-			<result outcome="success" type="quality" timestamp="2024-07-13 19:53:04 +0100">
-				<option key="--hashtable-size" value="31"/>
+			<result outcome="success" type="quality" timestamp="2024-08-13 13:11:39 +0100">
 			</result>
 		</query>
 		<query>
@@ -810,13 +790,10 @@ Mean estimate of displayed sample: 0.433 ± 0.09592 (95% CI)</comment>
 		<query>
 			<formula>simulate [&lt;=604800] {WD0.WD_energy_lost}</formula>
 			<comment/>
-			<result outcome="success" type="quality" timestamp="2024-07-14 00:21:52 +0100">
-				<option key="--hashtable-size" value="31"/>
+			<result outcome="success" type="quality" timestamp="2024-08-12 16:25:41 +0100">
 				<plot title="Simulations (1)" xaxis="time" yaxis="value">
 					<series title="WD0.WD_energy_lost" type="l" color="0xff0000" encoding="csv">0.0,0.0
-3.275501900012079,0.0
-3.275501900012079,13.0
-604800.0,13.0
+604800.0,0.0
 					</series>
 					<comment/>
 				</plot>
@@ -825,18 +802,6 @@ Mean estimate of displayed sample: 0.433 ± 0.09592 (95% CI)</comment>
 		<query>
 			<formula>simulate [&lt;=604800] {WD1.WD_energy_lost}</formula>
 			<comment/>
-			<result outcome="success" type="quality" timestamp="2024-07-14 00:22:03 +0100">
-				<option key="--hashtable-size" value="31"/>
-				<plot title="Simulations (1)" xaxis="time" yaxis="value">
-					<series title="WD1.WD_energy_lost" type="l" color="0xff0000" encoding="csv">0.0,0.0
-1.355368342615772,0.0
-3.0012730767757505,13.0
-3.0012730767757505,124.0
-604800.0,124.0
-					</series>
-					<comment/>
-				</plot>
-			</result>
 		</query>
 		<query>
 			<formula>simulate [&lt;=604800] {WD2.WD_energy_lost}</formula>
