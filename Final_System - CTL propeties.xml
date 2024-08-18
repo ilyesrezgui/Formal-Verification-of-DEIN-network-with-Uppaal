@@ -2,15 +2,15 @@
 <!DOCTYPE nta PUBLIC '-//Uppaal Team//DTD Flat System 1.6//EN' 'http://www.it.uu.se/research/group/darts/uppaal/flat-1_6.dtd'>
 <nta>
 	<declaration>// the enrgy of the signal transmitted/recieved
-const int N=6;
+const int N=11;
 
 typedef int[0,N-1] id_wd;
 
-double nbBit = 2; 
+int nbBit = 2; 
 //int[0,1000] energy_lost=0;
 broadcast chan HAP2WD;
 broadcast chan Send_Data[N], WD2HAP_REQ[N];
-double globalE_Sent; 
+int globalE_Sent; 
 
 bool sending=false;</declaration>
 	<template>
@@ -18,15 +18,14 @@ bool sending=false;</declaration>
 		<declaration>
 id_wd id_sender;
 id_wd id_sending_wd;
-double E_sent =100000; //// is the energy emission and it should be in microwattt, it represnts X in the WD declaration
-double Nb_data_sent[N]={0,0,0,0,0,0};
+int E_sent =1000; //// is the energy emission and it should be in microwattt, it represnts X in the WD declaration
+int Nb_data_sent[N]={0,0,0,0,0,0,0,0,0,0,0};
 clock HAP_return; // time needed to return to the idel state after data reception
 int period_for_recieving= 1; //  the time needed so the hap to receive data
 int period_for_sending= 1; // the time needed for the hap to send the data,we consider these clocks so that we reflect on the fact that these operations take time.
 
 clock HAP_sending; 
-
-void incrementAtId(double&amp; Nb_data_sent[N], int id) {
+void incrementAtId(int&amp; Nb_data_sent[N], int id) {
         Nb_data_sent[id]=Nb_data_sent[id]+1; 
     }
 
@@ -83,17 +82,17 @@ HAP_sending=0</label>
 	</template>
 	<template>
 		<name>WD</name>
-		<parameter>const id_wd id,double distance, int EWD</parameter>
+		<parameter>const id_wd id,int distance, int EWD</parameter>
 		<declaration>int Epack=4; //energy needed to send data from WD to Hap. between 50 et 150 nano j 
 //int nbbit=22; // represents the number of bits for a message. Article : Create Your Own Data and Energy Integrated Communication Network: A Brief Tutorial and a  Prototype System
 int decoding_percentage= 100;// it should be chosen accoridngly to global-Esent since it represents a part of the emitted value.
-double Energy_Harvested; //The percentage of energy to harvest if you're the requester.
+int Energy_Harvested; //The percentage of energy to harvest if you're the requester.
 
 bool W2H_Request=false;   
-double capacity=2500;// to be varried from 1 to 250 W/KG and it should depend on whether it is a battery or a super capacitator, to be changed in mW or micro Watt
+int capacity=25000;// to be varried from 1 to 250 W/KG and it should depend on whether it is a battery or a super capacitator, to be changed in mW or micro Watt
 int sensing_value=10; // in milliwatt/cm² to be varried accordingly
 int Threshold_for_sending=15; // represnts the threshhold for sending since sending data to hap also consumes energy for data encoding.
-double WD_energy_lost =0;
+int WD_energy_lost =0;
 
 int WD_receiving=4; 
 clock time_to_receive;
@@ -113,7 +112,7 @@ double calculateWavelength(double frequency) {
 }
 
 // this will calculate the path loss L
-double calculateFSPL(double distanceMeters, double frequencyHz) {
+double calculateFSPL(int distanceMeters, double frequencyHz) {
     // Calculate the FSPL in dB
     double fspl = 20 * log10(distanceMeters) + 20 * log10(frequencyHz) - 147.55;
 
@@ -125,7 +124,7 @@ double calculateFSPL(double distanceMeters, double frequencyHz) {
 //  frequency in HZ if the frequency for communication , in the RF interval 
 //  d is the distance 
 
-double calculateReceivedPower(double PT, double GT, double GR, double frequency_in_Hz, double d) {
+double calculateReceivedPower(double PT, double GT, double GR, double frequency_in_Hz, int d) {
     double lambda = calculateWavelength(frequency_in_Hz);
     double L_dB = calculateFSPL(d, frequency_in_Hz);
     double L = pow(10, L_dB / 10.0); // Convert FSPL from dB to linear scale
@@ -242,10 +241,21 @@ W2H_Request=false</label>
 		</transition>
 	</template>
 	<system>//const id_wd id,int distance, int EWD
-WD0=WD(0,0.2,50);   // the distance should be varried 0.2    0.4    0.7   1    5   10   20
-WD1=WD(1,10,90);
-WD2=WD(2,0.4,900);
-system WD0,WD1,WD2,HAP;</system>
+WD0=WD(0,1,50);   // the distance should be varried 0.2    0.4    0.7   1    5   10   20
+WD1=WD(1,1,50);
+WD2=WD(2,10,50);
+WD3=WD(3,1,50);
+WD4=WD(4,1,50);   // the distance should be varried 0.2    0.4    0.7   1    5   10   20
+WD5=WD(5,1,50);
+
+
+  // the distance should be varried 0.2    0.4    0.7   1    5   10   20
+//system WD0,HAP;
+//system WD0,WD1,WD2,WD3,HAP;
+//system WD0,WD1,WD2,HAP;
+
+system WD0,WD1,WD2,WD3,WD4,WD5,HAP;
+</system>
 	<queries>
 		<query>
 			<formula/>
@@ -258,6 +268,8 @@ system WD0,WD1,WD2,HAP;</system>
 		<query>
 			<formula>E&lt;&gt; HAP.SignalTransmission</formula>
 			<comment/>
+			<result outcome="success" type="quality" timestamp="2024-08-17 20:38:18 +0100">
+			</result>
 		</query>
 		<query>
 			<formula>E&lt;&gt; HAP.DataReception</formula>
@@ -268,7 +280,7 @@ system WD0,WD1,WD2,HAP;</system>
 		<query>
 			<formula>E&lt;&gt; WD1.SignalReception</formula>
 			<comment/>
-			<result outcome="success" type="quality" timestamp="2024-06-25 14:32:58 +0100">
+			<result outcome="success" type="quality" timestamp="2024-08-17 20:38:34 +0100">
 			</result>
 		</query>
 		<query>
@@ -298,37 +310,121 @@ system WD0,WD1,WD2,HAP;</system>
 			<comment>****************************************************************************************************</comment>
 		</query>
 		<query>
-			<formula>A[] (WD0.EWD &lt;= WD0.capacity) and (WD1.EWD &lt;= WD1.capacity)</formula>
-			<comment>The WD will eventually be full charged.</comment>
-			<result outcome="success" type="quality" timestamp="2024-08-13 13:10:35 +0100">
+			<formula>A[] (WD0.EWD &lt;= WD0.capacity) and (WD1.EWD &lt;= WD1.capacity) and  (WD2.EWD &lt;= WD2.capacity) and (WD3.EWD &lt;= WD3.capacity) and  (WD4.EWD &lt;= WD4.capacity) and (WD5.EWD &lt;= WD5.capacity) and  (WD6.EWD &lt;= WD6.capacity) and (WD7.EWD &lt;= WD7.capacity)</formula>
+			<comment/>
+		</query>
+		<query>
+			<formula>E&lt;&gt; (WD0.EWD &lt;= WD0.capacity) and (WD1.EWD &lt;= WD1.capacity) and  (WD2.EWD &lt;= WD2.capacity) and (WD3.EWD &lt;= WD3.capacity) and  (WD4.EWD &lt;= WD4.capacity) and (WD5.EWD &lt;= WD5.capacity) and  (WD6.EWD &lt;= WD6.capacity) and (WD7.EWD &lt;= WD7.capacity)</formula>
+			<comment/>
+			<result outcome="success" type="quality" timestamp="2024-08-17 23:08:20 +0100">
 			</result>
+		</query>
+		<query>
+			<formula>A[] (WD0.EWD &lt;= WD0.capacity) and (WD1.EWD &lt;= WD1.capacity) and  (WD2.EWD &lt;= WD2.capacity) and (WD3.EWD &lt;= WD3.capacity)</formula>
+			<comment/>
+			<result outcome="success" type="quality" timestamp="2024-08-17 21:19:23 +0100">
+			</result>
+		</query>
+		<query>
+			<formula>A[] (WD0.EWD &lt;= WD0.capacity) </formula>
+			<comment/>
+			<result outcome="success" type="quality" timestamp="2024-08-17 20:51:37 +0100">
+			</result>
+		</query>
+		<query>
+			<formula>****************************************************************************************************</formula>
+			<comment/>
 		</query>
 		<query>
 			<formula>A[](WD0.EWD&lt; WD0.sensing_value)imply WD0.EWD &lt; WD0.capacity</formula>
 			<comment/>
-			<result outcome="success" type="quality" timestamp="2024-08-13 12:57:59 +0100">
+			<result outcome="success" type="quality" timestamp="2024-08-17 21:56:16 +0100">
 			</result>
 		</query>
 		<query>
-			<formula>A[] WD0.DataTransmission  imply HAP.DataReception</formula>
+			<formula>A[](WD0.EWD&lt; WD0.sensing_value)imply WD0.EWD &lt; WD0.capacity and (WD1.EWD&lt; WD1.sensing_value)imply WD1.EWD &lt; WD1.capacity and (WD2.EWD&lt; WD2.sensing_value)imply WD2.EWD &lt; WD2.capacity and (WD3.EWD&lt; WD3.sensing_value)imply WD3.EWD &lt; WD3.capacity </formula>
 			<comment/>
-			<result outcome="success" type="quality" timestamp="2024-08-13 12:45:27 +0100">
+			<result outcome="success" type="quality" timestamp="2024-08-17 21:58:45 +0100">
 			</result>
 		</query>
 		<query>
-			<formula>A[] (HAP.SignalTransmission and HAP.sending==true) imply (WD0.SignalReception or WD1.SignalReception)</formula>
+			<formula>A[](WD0.EWD&lt; WD0.sensing_value)imply WD0.EWD &lt; WD0.capacity and (WD1.EWD&lt; WD1.sensing_value)imply WD1.EWD &lt; WD1.capacity and (WD2.EWD&lt; WD2.sensing_value)imply WD2.EWD &lt; WD2.capacity and (WD3.EWD&lt; WD3.sensing_value)imply WD3.EWD &lt; WD3.capacity and (WD4.EWD&lt; WD4.sensing_value)imply WD4.EWD &lt; WD4.capacity and (WD5.EWD&lt; WD5.sensing_value)imply WD5.EWD &lt; WD5.capacity </formula>
+			<comment/>
+			<result outcome="success" type="quality" timestamp="2024-08-17 22:01:47 +0100">
+			</result>
+		</query>
+		<query>
+			<formula>****************************************************************************************************</formula>
+			<comment/>
+		</query>
+		<query>
+			<formula>A[] WD0.DataTransmission imply HAP.DataReception</formula>
+			<comment/>
+		</query>
+		<query>
+			<formula>A[] WD0.DataTransmission or WD1.DataTransmission or WD2.DataTransmission or WD3.DataTransmission or  WD4.DataTransmission or WD5.DataTransmission imply HAP.DataReception</formula>
+			<comment/>
+			<result outcome="failure" type="quality" timestamp="2024-08-17 22:08:30 +0100">
+			</result>
+		</query>
+		<query>
+			<formula>E&lt;&gt; WD0.DataTransmission or WD1.DataTransmission or WD2.DataTransmission or WD3.DataTransmission or  WD4.DataTransmission or WD5.DataTransmission imply HAP.DataReception</formula>
+			<comment/>
+			<result outcome="success" type="quality" timestamp="2024-08-18 00:21:04 +0100">
+			</result>
+		</query>
+		<query>
+			<formula>****************************************************************************************************</formula>
+			<comment/>
+		</query>
+		<query>
+			<formula>A[] (HAP.SignalTransmission) imply (WD0.SignalReception or WD1.SignalReception or WD2.SignalReception or WD3.SignalReception)</formula>
+			<comment/>
+			<result outcome="failure" type="quality" timestamp="2024-08-17 22:11:25 +0100">
+			</result>
+		</query>
+		<query>
+			<formula>A[] (HAP.SignalTransmission) imply (WD0.SignalReception)</formula>
 			<comment/>
 			<option key="--hashtable-size" value="31"/>
-			<result outcome="failure" type="quality" timestamp="2024-08-13 12:55:33 +0100">
+			<result outcome="failure" type="quality" timestamp="2024-08-17 22:11:51 +0100">
 				<option key="--hashtable-size" value="31"/>
 			</result>
+		</query>
+		<query>
+			<formula>****************************************************************************************************</formula>
+			<comment/>
 		</query>
 		<query>
 			<formula>A[] not (WD0.SignalReception and WD0.DataTransmission)
 </formula>
 			<comment/>
-			<result outcome="success" type="quality" timestamp="2024-08-13 13:11:39 +0100">
+		</query>
+		<query>
+			<formula>A[] not (WD0.SignalReception and WD0.DataTransmission) and not (WD1.SignalReception and WD1.DataTransmission) and not (WD2.SignalReception and WD2.DataTransmission) and not (WD3.SignalReception and WD3.DataTransmission)
+</formula>
+			<comment/>
+			<result outcome="success" type="quality" timestamp="2024-08-17 22:14:51 +0100">
 			</result>
+		</query>
+		<query>
+			<formula>A[] not (WD0.SignalReception and WD0.DataTransmission) and not (WD1.SignalReception and WD1.DataTransmission) and not (WD2.SignalReception and WD2.DataTransmission) and not (WD3.SignalReception and WD3.DataTransmission) and not (WD4.SignalReception and WD4.DataTransmission) and not (WD5.SignalReception and WD5.DataTransmission)
+</formula>
+			<comment/>
+			<result outcome="success" type="quality" timestamp="2024-08-17 22:18:26 +0100">
+			</result>
+		</query>
+		<query>
+			<formula>****************************************************************************************************</formula>
+			<comment/>
+		</query>
+		<query>
+			<formula>A[] not deadlock</formula>
+			<comment/>
+		</query>
+		<query>
+			<formula>****************************************************************************************************</formula>
+			<comment/>
 		</query>
 		<query>
 			<formula>Pr[&lt;=86400] (&lt;&gt; WD1.EWD == WD1.capacity)
@@ -426,10 +522,6 @@ Span of displayed sample: [0, 0]
 Mean estimate of displayed sample: ≈ 0</comment>
 				</plot>
 			</result>
-		</query>
-		<query>
-			<formula/>
-			<comment/>
 		</query>
 		<query>
 			<formula>Pr[&lt;=86400] (&lt;&gt; WD0.DataTransmission or WD1.DataTransmission &amp;&amp; not (HAP.SignalTransmission &amp;&amp; HAP.Idle))</formula>

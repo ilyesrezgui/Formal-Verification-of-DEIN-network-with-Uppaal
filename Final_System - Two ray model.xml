@@ -84,13 +84,13 @@ HAP_sending=0</label>
 	<template>
 		<name>WD</name>
 		<parameter>const id_wd id,double distance, int EWD</parameter>
-		<declaration>int Epack=4; //energy needed to send data from WD to Hap. between 50 et 150 nano j 
+		<declaration>int Epack=150; //energy needed to send data from WD to Hap. between 50 et 150 nano j 
 //int nbbit=22; // represents the number of bits for a message. Article : Create Your Own Data and Energy Integrated Communication Network: A Brief Tutorial and a  Prototype System
-int decoding_percentage= 100;// it should be chosen accoridngly to global-Esent since it represents a part of the emitted value.
+int decoding_percentage= 10000;// it should be chosen accoridngly to global-Esent since it represents a part of the emitted value.
 double Energy_Harvested; //The percentage of energy to harvest if you're the requester.
 
 bool W2H_Request=false;   
-double capacity=2500;// to be varried from 1 to 250 W/KG and it should depend on whether it is a battery or a super capacitator, to be changed in mW or micro Watt
+double capacity=250000000;// to be varried from 1 to 250 W/KG and it should depend on whether it is a battery or a super capacitator, to be changed in mW or micro Watt
 int sensing_value=10; // in milliwatt/cm² to be varried accordingly
 int Threshold_for_sending=15; // represnts the threshhold for sending since sending data to hap also consumes energy for data encoding.
 double WD_energy_lost =0;
@@ -150,27 +150,39 @@ if (k+y&gt; capacity){
         return k+y;}
 }
 
-int discrete_verif_capacity (double x,int y){
-double res;
-res=verif_capacity(x,y);
-return castToInt(res);
-}
 
-// double calculateokumura(double distanceMeters, double frequencyHz)
-
-
-
-// double calculateReceivedPower2paths(double PT, double GT, double GR, double frequency_in_Hz, double d, double ht, double hr) {
-//    double lambda = calculateWavelength(frequency_in_Hz);
-//    double L_dB = calculateFSPL(d, frequency_in_Hz);
-//    double L = pow(10, L_dB / 10.0); // Convert FSPL from dB to linear scale
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////// this section is about using the two ground model////////////////////////////////////////////////////////////////////////////////////////////////////
+double calculateReceivedPower2paths(double PT, double GT, double GR, double frequency_in_Hz, double d, double ht, double hr) {
+   double lambda = calculateWavelength(frequency_in_Hz);
+   double L_dB = calculateFSPL(d, frequency_in_Hz);
+   double L = pow(10, L_dB / 10.0); // Convert FSPL from dB to linear scale
 
 //    // Calculate the received power using the Friis transmission equation
-//    double numerator = PT * GT * GR * pow(ht, 2) * pow(hr, 2);
-//    double denominator = pow(d, 4) * L;
-//    double PR = numerator/denominator;
-//    return PR;
-//} 
+    double numerator = PT * GT * GR * pow(ht, 2) * pow(hr, 2);
+    double denominator = pow(d, 4) * L;
+    double PR = numerator/denominator;
+    return PR;
+} 
+
+double verif_capacity2(double x,int y){
+// we want to analyse energy lost with repsect to distance  
+double k=calculateReceivedPower2paths(x,3.8,3.8,915e6,distance,1.5,0.5);      // x is the energy emission and it should be in microwattt
+if (k+y&gt; capacity){
+        //energy_lost=castToInt(energy_lost+(k+y-capacity));
+        WD_energy_lost=WD_energy_lost+castToInt(k+y-capacity);
+        return capacity; 
+    }
+    else {
+        return k+y;}
+}
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////// if  you want to sue the FRIIS basic equation change verif_capacity2 with verif_capacity//////////////////////////////////////////
+int discrete_verif_capacity (double x,int y){
+double res;
+res=verif_capacity2(x,y);
+return castToInt(res);
+}
 
 
 </declaration>
@@ -242,9 +254,9 @@ W2H_Request=false</label>
 		</transition>
 	</template>
 	<system>//const id_wd id,int distance, int EWD
-WD0=WD(0,0.2,50);   // the distance should be varried 0.2    0.4    0.7   1    5   10   20
-WD1=WD(1,10,90);
-WD2=WD(2,0.4,900);
+WD0=WD(0,0.8,50);   // the distance should be varried 0.2    0.4    0.7   1    5   10   20
+WD1=WD(1,0.6,90);
+WD2=WD(2,0.7,80);
 system WD0,WD1,WD2,HAP;</system>
 	<queries>
 		<query>
