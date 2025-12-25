@@ -1,4 +1,4 @@
-This is a formal verification of the proposed network in the context of 5G networks that integrates Energy and Data transmission through the list of papers :
+This is a formal verification of the proposed network in the context of 6G networks that integrates Energy and Data transmission through the list of papers :
 * Throughput Maximization and Fairness Assurance in Data and Energy Integrated Communication Networks
 * Integrated Data and Energy Communication Network: A Comprehensive Survey
 * Data and Energy Integrated Communication Networks for Wireless Big Data
